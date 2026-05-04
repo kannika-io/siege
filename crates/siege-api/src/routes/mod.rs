@@ -17,6 +17,7 @@ pub fn configure<K: KafkaBackend>(cfg: &mut web::ServiceConfig) {
             .route(
                 "/topics/{name}/config",
                 web::post().to(topics::update_topic_config::<K>),
-            ),
+            )
+            .route("/events", web::get().to(topics::events::<K>)),
     );
 }

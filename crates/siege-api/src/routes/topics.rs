@@ -1,8 +1,10 @@
 use actix_web::{web, HttpResponse};
+use futures::StreamExt;
 use siege_core::{CreateTopicRequest, TopicConfigUpdate};
 
 use crate::error::ApiError;
 use crate::kafka::backend::KafkaBackend;
+use crate::sse::broadcaster::Broadcaster;
 
 pub async fn list_topics<K: KafkaBackend>(
     backend: web::Data<K>,
@@ -47,6 +49,40 @@ pub async fn update_topic_config<K: KafkaBackend>(
         .update_topic_config(&name, body.into_inner())
         .await?;
     Ok(HttpResponse::Ok().finish())
+}
+
+pub async fn events<K: KafkaBackend>(
+    backend: web::Data<K>,
+    broadcaster: web::Data<Broadcaster>,
+) -> HttpResponse {
+    let snapshot = backend.list_topics().await.unwrap_or_default();
+    let rx = broadcaster.subscribe();
+
+    let snapshot_data = serde_json::to_string(&siege_core::SseEvent::TopicsSnapshot {
+        topics: snapshot,
+    })
+    .unwrap();
+
+    let initial = futures::stream::once(async move {
+        Ok::<_, actix_web::Error>(actix_web::web::Bytes::from(format!(
+            "data: {snapshot_data}\n\n"
+        )))
+    });
+
+    let updates = tokio_stream::wrappers::BroadcastStream::new(rx).filter_map(|result| async {
+        match result {
+            Ok(event) => {
+                let data = serde_json::to_string(&event).ok()?;
+                Some(Ok(actix_web::web::Bytes::from(format!("data: {data}\n\n"))))
+            }
+            Err(_) => None,
+        }
+    });
+
+    HttpResponse::Ok()
+        .insert_header(("content-type", "text/event-stream"))
+        .insert_header(("cache-control", "no-cache"))
+        .streaming(initial.chain(updates))
 }
 
 #[cfg(test)]
