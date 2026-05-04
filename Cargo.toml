@@ -1,0 +1,53 @@
+[workspace]
+resolver = "2"
+members = [
+    "crates/siege-core",
+    "crates/siege-api-spec",
+    "crates/siege-api",
+    "crates/siege-api-client",
+    "crates/siege-console",
+]
+
+[workspace.package]
+version = "0.1.0"
+edition = "2024"
+
+[workspace.dependencies]
+# Internal crates
+siege-core = { path = "crates/siege-core" }
+siege-api-spec = { path = "crates/siege-api-spec" }
+siege-api-client = { path = "crates/siege-api-client" }
+
+# Serialization
+serde = { version = "1", features = ["derive"] }
+serde_json = "1"
+
+# Web
+actix-web = "4"
+actix-cors = "0.7"
+reqwest = { version = "0.12", default-features = false, features = ["json"] }
+
+# Kafka
+rdkafka = { version = "0.37", features = ["cmake-build"] }
+
+# Async
+tokio = { version = "1", features = ["full"] }
+tokio-stream = "0.1"
+futures = "0.3"
+
+# CLI
+clap = { version = "4", features = ["derive", "env"] }
+
+# Errors
+thiserror = "2"
+
+# OpenAPI
+utoipa = "5"
+utoipa-swagger-ui = { version = "9", features = ["actix-web"] }
+
+# Dioxus
+dioxus = { version = "=0.7.5", features = ["web", "router"] }
+
+# WASM
+web-sys = { version = "0.3", features = ["EventSource", "MessageEvent"] }
+wasm-bindgen = "0.2"

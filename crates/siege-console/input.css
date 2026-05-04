@@ -1,0 +1,20 @@
+@import "tailwindcss";
+
+@source "../src/**/*.rs";
+
+@theme {
+  --font-medieval: "MedievalSharp", cursive;
+  --font-serif: "Crimson Text", serif;
+
+  --color-stone-900: #1a1410;
+  --color-stone-800: #2a2018;
+  --color-stone-700: #332a1e;
+  --color-stone-600: #4a3c2a;
+  --color-parchment: #e8d5b5;
+  --color-parchment-dim: #a89070;
+  --color-gold: #c9a84c;
+  --color-gold-bright: #d9b85c;
+  --color-blood: #8b2500;
+  --color-blood-bright: #a03000;
+  --color-forest: #4a7c3f;
+}

@@ -1,2 +1,11 @@
 **/superpowers/
 **/specs/**/*.md
+
+# Build
+target/
+
+# Node
+node_modules/
+
+# Dioxus
+dist/

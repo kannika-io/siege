@@ -1,0 +1,6 @@
+[application]
+name = "siege-console"
+default_platform = "web"
+
+[web.app]
+title = "Siege - Kafka Chaos"

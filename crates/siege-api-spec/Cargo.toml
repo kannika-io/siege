@@ -1,0 +1,8 @@
+[package]
+name = "siege-api-spec"
+version.workspace = true
+edition.workspace = true
+
+[dependencies]
+siege-core.workspace = true
+utoipa.workspace = true
