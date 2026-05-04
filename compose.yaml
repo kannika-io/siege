@@ -1,0 +1,30 @@
+services:
+  siege-api:
+    build:
+      context: .
+      target: api
+    command: ["siege-api", "--bootstrap-servers", "kafka:9092"]
+    ports:
+      - "8080:8080"
+    depends_on:
+      kafka:
+        condition: service_healthy
+
+  siege-console:
+    build:
+      context: .
+      target: console
+    ports:
+      - "3000:80"
+    depends_on:
+      - siege-api
+
+  kafka:
+    image: confluentinc/confluent-local:7.9.0
+    ports:
+      - "9092:9092"
+    healthcheck:
+      test: ["CMD", "kafka-topics", "--bootstrap-server", "localhost:9092", "--list"]
+      interval: 5s
+      timeout: 10s
+      retries: 10
