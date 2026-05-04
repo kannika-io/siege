@@ -10,7 +10,9 @@ use siege_api_spec::ApiDoc;
 use utoipa::OpenApi;
 use utoipa_swagger_ui::SwaggerUi;
 
+use kafka::backend::KafkaBackend;
 use kafka::rdkafka_backend::RdKafkaBackend;
+use siege_core::CreateTopicRequest;
 use sse::broadcaster::Broadcaster;
 
 #[derive(Parser)]
@@ -21,6 +23,9 @@ struct Cli {
 
     #[arg(long, default_value = "8080")]
     port: u16,
+
+    #[arg(long, default_value = "false")]
+    seed: bool,
 }
 
 #[actix_web::main]
@@ -28,6 +33,11 @@ async fn main() -> std::io::Result<()> {
     let cli = Cli::parse();
 
     let backend = RdKafkaBackend::new(&cli.bootstrap_servers);
+
+    if cli.seed {
+        seed_topics(&backend).await;
+    }
+
     let broadcaster = Broadcaster::new(256);
 
     let watcher_backend = backend.clone();
@@ -58,4 +68,28 @@ async fn main() -> std::io::Result<()> {
     .bind(("0.0.0.0", cli.port))?
     .run()
     .await
+}
+
+async fn seed_topics(backend: &impl KafkaBackend) {
+    let seeds = [
+        ("kings-landing", 6, 1),
+        ("winterfell", 3, 1),
+        ("the-wall", 1, 1),
+        ("iron-islands", 3, 1),
+        ("dragonstone", 3, 1),
+    ];
+
+    for (name, partitions, rf) in seeds {
+        match backend
+            .create_topic(CreateTopicRequest {
+                name: name.into(),
+                partitions,
+                replication_factor: rf,
+            })
+            .await
+        {
+            Ok(()) => eprintln!("seeded topic: {name}"),
+            Err(e) => eprintln!("seed {name}: {e}"),
+        }
+    }
 }

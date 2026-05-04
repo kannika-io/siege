@@ -3,7 +3,7 @@ services:
     build:
       context: .
       target: api
-    command: ["siege-api", "--bootstrap-servers", "kafka:9092"]
+    command: ["siege-api", "--bootstrap-servers", "kafka:9092", "--seed"]
     ports:
       - "8080:8080"
     depends_on:
