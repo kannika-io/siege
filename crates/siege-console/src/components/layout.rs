@@ -20,7 +20,7 @@ pub fn Layout(children: Element) -> Element {
             }
         }
         div { class: "{theme_class}",
-            div { class: "bg-background text-foreground h-screen flex font-sans antialiased",
+            div { class: "bg-background text-foreground h-screen flex font-sans antialiased p-2",
                 nav { class: "w-56 shrink-0 flex flex-col px-3 py-4",
                     div { class: "flex items-center gap-2.5 px-3 py-2 mb-6",
                         div { class: "w-5 h-5 rounded bg-accent flex items-center justify-center",
@@ -44,7 +44,7 @@ pub fn Layout(children: Element) -> Element {
                     }
                 }
 
-                div { class: "flex-1 bg-surface rounded-l-xl overflow-hidden flex flex-col border-l border-border",
+                div { class: "flex-1 bg-surface rounded-xl overflow-hidden flex flex-col border border-border",
                     {children}
                 }
             }
