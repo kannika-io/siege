@@ -1,4 +1,3 @@
-use std::collections::HashMap;
 use std::future::Future;
 use std::sync::Arc;
 use std::time::Duration;
@@ -8,7 +7,7 @@ use rdkafka::admin::{
 };
 use rdkafka::client::DefaultClientContext;
 use rdkafka::config::ClientConfig;
-use siege_core::*;
+use siege_api_spec::*;
 
 use super::backend::KafkaBackend;
 
@@ -92,12 +91,12 @@ impl KafkaBackend for RdKafkaBackend {
                 .await
                 .map_err(|e| SiegeError::KafkaError(e.to_string()))?;
 
-            let mut config_map = HashMap::new();
+            let mut config = KafkaProperties::new();
             for result in configs {
                 if let Ok(resource) = result {
                     for entry in resource.entries {
                         if let Some(value) = entry.value {
-                            config_map.insert(entry.name, value);
+                            config.insert(entry.name, value);
                         }
                     }
                 }
@@ -107,7 +106,7 @@ impl KafkaBackend for RdKafkaBackend {
                 name: name.clone(),
                 partitions,
                 replication_factor,
-                config: config_map,
+                config,
             })
         }
     }
@@ -167,7 +166,7 @@ impl KafkaBackend for RdKafkaBackend {
         let name = name.to_owned();
         async move {
             let mut alter = AlterConfig::new(ResourceSpecifier::Topic(&name));
-            for (key, value) in &config.config {
+            for (key, value) in config.config.iter() {
                 alter = alter.set(key, value);
             }
 

@@ -1,6 +1,6 @@
 use actix_web::http::StatusCode;
 use actix_web::{HttpResponse, ResponseError};
-use siege_core::SiegeError;
+use siege_api_spec::SiegeError;
 use std::fmt;
 
 #[derive(Debug)]

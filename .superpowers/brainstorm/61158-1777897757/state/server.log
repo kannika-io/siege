@@ -1,0 +1,7 @@
+{"type":"server-started","port":62460,"host":"127.0.0.1","url_host":"localhost","url":"http://localhost:62460","screen_dir":"/Users/tom/git/kannika/siege/main/.superpowers/brainstorm/61158-1777897757/content","state_dir":"/Users/tom/git/kannika/siege/main/.superpowers/brainstorm/61158-1777897757/state"}
+{"type":"screen-added","file":"/Users/tom/git/kannika/siege/main/.superpowers/brainstorm/61158-1777897757/content/map-terrain.html"}
+{"type":"screen-added","file":"/Users/tom/git/kannika/siege/main/.superpowers/brainstorm/61158-1777897757/content/map-terrain-v2.html"}
+{"source":"user-event","type":"click","text":"winterfell\n        \n      \n    \n    \n      C: Isometric with detailed SVG castles\n      Full isometric perspective with hand-crafted SVG castle sprites. Most immersive but most complex to build (3 castle tiers needed).","choice":"c","id":null,"timestamp":1777898540658}
+{"type":"screen-added","file":"/Users/tom/git/kannika/siege/main/.superpowers/brainstorm/61158-1777897757/content/full-mockup.html"}
+{"type":"screen-added","file":"/Users/tom/git/kannika/siege/main/.superpowers/brainstorm/61158-1777897757/content/full-mockup-v2.html"}
+{"type":"server-stopped","reason":"idle timeout"}

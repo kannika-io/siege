@@ -1,4 +1,4 @@
-use siege_core::SseEvent;
+use siege_api_spec::SseEvent;
 use tokio::sync::broadcast;
 
 #[derive(Clone)]

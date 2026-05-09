@@ -7,6 +7,7 @@ pub enum IconName {
     Monitor,
     Layers,
     Copy,
+    Compress,
 }
 
 impl IconName {
@@ -31,6 +32,10 @@ impl IconName {
             IconName::Copy => rsx! {
                 path { d: "M11 9h9a2 2 0 0 1 2 2v9a2 2 0 0 1-2 2h-9a2 2 0 0 1-2-2v-9a2 2 0 0 1 2-2z" }
                 path { d: "M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1" }
+            },
+            IconName::Compress => rsx! {
+                path { d: "M4 14l5-5M4 14h5v-5" }
+                path { d: "M20 10l-5 5M20 10h-5v5" }
             },
         }
     }

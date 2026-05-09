@@ -4,5 +4,10 @@ version.workspace = true
 edition.workspace = true
 
 [dependencies]
-siege-core.workspace = true
+siege-kernel = { workspace = true, features = ["openapi"] }
+serde.workspace = true
+thiserror.workspace = true
 utoipa.workspace = true
+
+[dev-dependencies]
+serde_json.workspace = true

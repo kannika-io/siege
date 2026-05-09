@@ -1,6 +1,6 @@
 use dioxus::prelude::*;
 use siege_api_client::SiegeClient;
-use siege_core::{Topic, TopicDetail};
+use siege_api_client::{Topic, TopicDetail};
 
 #[derive(Clone, Copy, PartialEq)]
 pub enum Theme {

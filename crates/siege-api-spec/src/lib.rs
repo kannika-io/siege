@@ -1,4 +1,12 @@
-use siege_core::{CreateTopicRequest, SiegeError, SseEvent, Topic, TopicConfigUpdate, TopicDetail};
+pub mod error;
+pub mod events;
+pub mod types;
+
+pub use error::SiegeError;
+pub use events::SseEvent;
+pub use siege_kernel::KafkaProperties;
+pub use types::*;
+
 use utoipa::OpenApi;
 
 #[derive(OpenApi)]

@@ -1,7 +1,7 @@
 use std::collections::HashMap;
 use std::sync::{Arc, Mutex};
 
-use siege_core::*;
+use siege_api_spec::*;
 
 use super::backend::KafkaBackend;
 
@@ -65,7 +65,7 @@ impl KafkaBackend for MockKafkaBackend {
                         name: req.name,
                         partitions: req.partitions,
                         replication_factor: req.replication_factor,
-                        config: HashMap::new(),
+                        config: KafkaProperties::new(),
                     },
                 );
                 Ok(())
@@ -96,6 +96,7 @@ impl KafkaBackend for MockKafkaBackend {
             match topics.get_mut(name) {
                 Some(detail) => {
                     detail.config.extend(config.config);
+
                     Ok(())
                 }
                 None => Err(SiegeError::TopicNotFound(name.to_owned())),
@@ -114,7 +115,7 @@ mod tests {
             name: name.into(),
             partitions: 3,
             replication_factor: 1,
-            config: HashMap::new(),
+            config: KafkaProperties::new(),
         }
     }
 
@@ -186,7 +187,7 @@ mod tests {
             .update_topic_config(
                 "t",
                 TopicConfigUpdate {
-                    config: HashMap::from([("retention.ms".into(), "1000".into())]),
+                    config: HashMap::from([("retention.ms".into(), "1000".into())]).into(),
                 },
             )
             .await

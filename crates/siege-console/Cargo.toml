@@ -4,7 +4,6 @@ version.workspace = true
 edition.workspace = true
 
 [dependencies]
-siege-core.workspace = true
 siege-api-client.workspace = true
 dioxus.workspace = true
 serde.workspace = true

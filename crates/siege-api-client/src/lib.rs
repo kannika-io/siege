@@ -1,4 +1,7 @@
-use siege_core::{CreateTopicRequest, SiegeError, Topic, TopicConfigUpdate, TopicDetail};
+pub use siege_api_spec::{
+    CreateTopicRequest, KafkaProperties, SiegeError, SseEvent, Topic, TopicConfigUpdate,
+    TopicDetail,
+};
 use thiserror::Error;
 
 #[derive(Debug, Error)]

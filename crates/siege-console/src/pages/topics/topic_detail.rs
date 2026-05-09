@@ -1,8 +1,7 @@
 use dioxus::prelude::*;
-use siege_core::TopicDetail;
+use siege_api_client::TopicDetail;
 
-use crate::components::ui::icon::IconName;
-use crate::components::ui::pill::{Pill, PillVariant};
+use super::topic_pills::TopicPills;
 use crate::state::AppState;
 
 #[component]
@@ -27,9 +26,8 @@ pub fn TopicDetailPanel(detail: TopicDetail) -> Element {
                 }
             }
 
-            div { class: "px-6 py-4 flex gap-2 border-b border-border",
-                Pill { variant: PillVariant::Accent, icon: IconName::Layers, "{detail.partitions} partitions" }
-                Pill { variant: PillVariant::Destructive, icon: IconName::Copy, "RF {detail.replication_factor}" }
+            div { class: "px-6 py-4 border-b border-border",
+                TopicPills { partitions: detail.partitions, replication_factor: detail.replication_factor, config: detail.config.clone() }
             }
 
             if !detail.config.is_empty() {
@@ -46,7 +44,7 @@ pub fn TopicDetailPanel(detail: TopicDetail) -> Element {
                                 }
                             }
                             tbody {
-                                for (key, value) in &detail.config {
+                                for (key, value) in detail.config.iter() {
                                     tr { class: "border-t border-border",
                                         td { class: "px-3 py-2 text-xs break-all", "{key}" }
                                         td { class: "px-3 py-2 text-xs text-muted-foreground break-all", "{value}" }

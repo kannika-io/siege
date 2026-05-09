@@ -1,6 +1,5 @@
-use std::collections::HashMap;
-
 use serde::{Deserialize, Serialize};
+use siege_kernel::KafkaProperties;
 use utoipa::ToSchema;
 
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize, ToSchema)]
@@ -15,7 +14,7 @@ pub struct TopicDetail {
     pub name: String,
     pub partitions: i32,
     pub replication_factor: i32,
-    pub config: HashMap<String, String>,
+    pub config: KafkaProperties,
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize, ToSchema)]
@@ -27,11 +26,13 @@ pub struct CreateTopicRequest {
 
 #[derive(Debug, Clone, Serialize, Deserialize, ToSchema)]
 pub struct TopicConfigUpdate {
-    pub config: HashMap<String, String>,
+    pub config: KafkaProperties,
 }
 
 #[cfg(test)]
 mod tests {
+    use std::collections::HashMap;
+
     use super::*;
 
     #[test]
@@ -52,7 +53,7 @@ mod tests {
             name: "test-topic".into(),
             partitions: 6,
             replication_factor: 3,
-            config: HashMap::from([("retention.ms".into(), "86400000".into())]),
+            config: HashMap::from([("retention.ms".into(), "86400000".into())]).into(),
         };
         let json = serde_json::to_string(&detail).unwrap();
         let deserialized: TopicDetail = serde_json::from_str(&json).unwrap();

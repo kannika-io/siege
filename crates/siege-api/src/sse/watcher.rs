@@ -1,7 +1,7 @@
 use std::collections::HashSet;
 use std::time::Duration;
 
-use siege_core::SseEvent;
+use siege_api_spec::SseEvent;
 
 use super::broadcaster::Broadcaster;
 use crate::kafka::backend::KafkaBackend;
@@ -45,9 +45,7 @@ pub async fn watch_cluster<K: KafkaBackend>(
 
 #[cfg(test)]
 mod tests {
-    use std::collections::HashMap;
-
-    use siege_core::{CreateTopicRequest, TopicDetail};
+    use siege_api_spec::{CreateTopicRequest, KafkaProperties, TopicDetail};
 
     use super::*;
     use crate::kafka::mock::MockKafkaBackend;
@@ -91,7 +89,7 @@ mod tests {
             name: "doomed".into(),
             partitions: 1,
             replication_factor: 1,
-            config: HashMap::new(),
+            config: KafkaProperties::new(),
         }]);
         let broadcaster = Broadcaster::new(16);
         let mut rx = broadcaster.subscribe();

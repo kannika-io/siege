@@ -1,5 +1,5 @@
 use dioxus::prelude::*;
-use siege_core::SseEvent;
+use siege_api_client::SseEvent;
 use wasm_bindgen::prelude::*;
 use wasm_bindgen::JsCast;
 use web_sys::EventSource;

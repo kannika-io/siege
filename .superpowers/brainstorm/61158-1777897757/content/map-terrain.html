@@ -1,0 +1,59 @@
+<h2>Map terrain style</h2>
+<p class="subtitle">What should the background of the kingdom map look like?</p>
+
+<div class="cards">
+  <div class="card" data-choice="a" onclick="toggleSelect(this)">
+    <div class="card-image" style="height:200px;background:#2a3a1a;position:relative;overflow:hidden;">
+      <!-- Grass with subtle grid -->
+      <div style="position:absolute;inset:0;background:repeating-linear-gradient(0deg,transparent,transparent 59px,rgba(255,255,255,0.05) 59px,rgba(255,255,255,0.05) 60px),repeating-linear-gradient(90deg,transparent,transparent 59px,rgba(255,255,255,0.05) 59px,rgba(255,255,255,0.05) 60px);"></div>
+      <div style="position:absolute;inset:0;background:radial-gradient(circle at 30% 40%,#3a4a2a,transparent 40%),radial-gradient(circle at 70% 60%,#2a3a1a,transparent 50%);"></div>
+      <!-- Sample castle -->
+      <div style="position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);text-align:center;">
+        <div style="font-size:48px;">🏰</div>
+        <div style="color:#c9a84c;font-family:serif;font-size:12px;margin-top:4px;text-shadow:0 1px 3px rgba(0,0,0,0.8);">winterfell</div>
+      </div>
+    </div>
+    <div class="card-body">
+      <h3>A: Green fields</h3>
+      <p>Dark green terrain with subtle grid lines. Clean, game-board feel. Castles stand out clearly.</p>
+    </div>
+  </div>
+
+  <div class="card" data-choice="b" onclick="toggleSelect(this)">
+    <div class="card-image" style="height:200px;background:#1a1410;position:relative;overflow:hidden;">
+      <!-- Parchment map style -->
+      <div style="position:absolute;inset:0;background:linear-gradient(135deg,#2a2018,#1a1410,#2a2018);"></div>
+      <div style="position:absolute;inset:0;background:repeating-linear-gradient(0deg,transparent,transparent 59px,rgba(201,168,76,0.1) 59px,rgba(201,168,76,0.1) 60px),repeating-linear-gradient(90deg,transparent,transparent 59px,rgba(201,168,76,0.1) 59px,rgba(201,168,76,0.1) 60px);"></div>
+      <!-- Sample castle -->
+      <div style="position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);text-align:center;">
+        <div style="font-size:48px;">🏰</div>
+        <div style="color:#c9a84c;font-family:serif;font-size:12px;margin-top:4px;text-shadow:0 1px 3px rgba(0,0,0,0.8);">winterfell</div>
+      </div>
+    </div>
+    <div class="card-body">
+      <h3>B: Dark parchment</h3>
+      <p>Matches your existing stone/gold theme. Gold grid lines on dark background. Keeps the medieval feel consistent.</p>
+    </div>
+  </div>
+
+  <div class="card" data-choice="c" onclick="toggleSelect(this)">
+    <div class="card-image" style="height:200px;background:#1a2a1a;position:relative;overflow:hidden;">
+      <!-- Mixed terrain -->
+      <div style="position:absolute;inset:0;background:
+        radial-gradient(ellipse at 20% 30%, #2a3a1a 0%, transparent 40%),
+        radial-gradient(ellipse at 80% 70%, #1a2a2a 0%, transparent 35%),
+        radial-gradient(ellipse at 50% 80%, #2a2a1a 0%, transparent 30%),
+        #1a2018;"></div>
+      <div style="position:absolute;inset:0;background:repeating-linear-gradient(0deg,transparent,transparent 59px,rgba(255,255,255,0.03) 59px,rgba(255,255,255,0.03) 60px),repeating-linear-gradient(90deg,transparent,transparent 59px,rgba(255,255,255,0.03) 59px,rgba(255,255,255,0.03) 60px);"></div>
+      <!-- Sample castle -->
+      <div style="position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);text-align:center;">
+        <div style="font-size:48px;">🏰</div>
+        <div style="color:#c9a84c;font-family:serif;font-size:12px;margin-top:4px;text-shadow:0 1px 3px rgba(0,0,0,0.8);">winterfell</div>
+      </div>
+    </div>
+    <div class="card-body">
+      <h3>C: Mixed terrain</h3>
+      <p>Varied greens and browns suggesting forests, plains, and hills. More immersive but busier.</p>
+    </div>
+  </div>
+</div>

@@ -1,6 +1,6 @@
 use std::future::Future;
 
-use siege_core::{CreateTopicRequest, SiegeError, Topic, TopicConfigUpdate, TopicDetail};
+use siege_api_spec::{CreateTopicRequest, SiegeError, Topic, TopicConfigUpdate, TopicDetail};
 
 pub trait KafkaBackend: Send + Sync + 'static {
     fn list_topics(&self) -> impl Future<Output = Result<Vec<Topic>, SiegeError>> + Send;

@@ -12,7 +12,7 @@ use utoipa_swagger_ui::SwaggerUi;
 
 use kafka::backend::KafkaBackend;
 use kafka::rdkafka_backend::RdKafkaBackend;
-use siege_core::CreateTopicRequest;
+use siege_api_spec::CreateTopicRequest;
 use sse::broadcaster::Broadcaster;
 
 #[derive(Parser)]

@@ -1,8 +1,7 @@
 use dioxus::prelude::*;
-use siege_core::Topic;
+use siege_api_client::Topic;
 
-use crate::components::ui::icon::IconName;
-use crate::components::ui::pill::{Pill, PillVariant};
+use super::topic_pills::TopicPills;
 use crate::state::AppState;
 
 #[component]
@@ -54,10 +53,7 @@ fn TopicRow(topic: Topic) -> Element {
                 });
             },
             span { class: "text-sm font-medium", "{topic.name}" }
-            div { class: "flex items-center gap-2",
-                Pill { variant: PillVariant::Accent, icon: IconName::Layers, "{topic.partitions} partitions" }
-                Pill { variant: PillVariant::Destructive, icon: IconName::Copy, "RF {topic.replication_factor}" }
-            }
+            TopicPills { partitions: topic.partitions, replication_factor: topic.replication_factor }
         }
     }
 }

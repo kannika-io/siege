@@ -8,7 +8,7 @@ use layouts::default::Layout;
 use pages::topics::topic_detail::TopicDetailPanel;
 use pages::topics::topic_list::TopicList;
 use dioxus::prelude::*;
-use siege_core::TopicDetail;
+use siege_api_client::TopicDetail;
 use state::{AppState, Theme};
 
 const API_URL: &str = "http://localhost:8080";

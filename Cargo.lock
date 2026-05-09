@@ -3433,7 +3433,6 @@ dependencies = [
  "serde",
  "serde_json",
  "siege-api-spec",
- "siege-core",
  "tokio",
  "tokio-stream",
  "utoipa",
@@ -3447,7 +3446,7 @@ dependencies = [
  "reqwest",
  "serde",
  "serde_json",
- "siege-core",
+ "siege-api-spec",
  "thiserror 2.0.18",
 ]
 
@@ -3455,7 +3454,10 @@ dependencies = [
 name = "siege-api-spec"
 version = "0.1.0"
 dependencies = [
- "siege-core",
+ "serde",
+ "serde_json",
+ "siege-kernel",
+ "thiserror 2.0.18",
  "utoipa",
 ]
 
@@ -3467,18 +3469,16 @@ dependencies = [
  "serde",
  "serde_json",
  "siege-api-client",
- "siege-core",
  "wasm-bindgen",
  "web-sys",
 ]
 
 [[package]]
-name = "siege-core"
+name = "siege-kernel"
 version = "0.1.0"
 dependencies = [
  "serde",
  "serde_json",
- "thiserror 2.0.18",
  "utoipa",
 ]
 

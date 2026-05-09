@@ -1,10 +1,14 @@
 [package]
-name = "siege-core"
+name = "siege-kernel"
 version.workspace = true
 edition.workspace = true
 
+[features]
+openapi = ["dep:utoipa"]
+
 [dependencies]
 serde.workspace = true
+utoipa = { workspace = true, optional = true }
+
+[dev-dependencies]
 serde_json.workspace = true
-thiserror.workspace = true
-utoipa.workspace = true

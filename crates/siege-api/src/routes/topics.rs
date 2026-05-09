@@ -1,6 +1,6 @@
 use actix_web::{web, HttpResponse};
 use futures::StreamExt;
-use siege_core::{CreateTopicRequest, TopicConfigUpdate};
+use siege_api_spec::{CreateTopicRequest, TopicConfigUpdate};
 
 use crate::error::ApiError;
 use crate::kafka::backend::KafkaBackend;
@@ -58,7 +58,7 @@ pub async fn events<K: KafkaBackend>(
     let snapshot = backend.list_topics().await.unwrap_or_default();
     let rx = broadcaster.subscribe();
 
-    let snapshot_data = serde_json::to_string(&siege_core::SseEvent::TopicsSnapshot {
+    let snapshot_data = serde_json::to_string(&siege_api_spec::SseEvent::TopicsSnapshot {
         topics: snapshot,
     })
     .unwrap();
@@ -91,7 +91,7 @@ mod tests {
 
     use actix_web::http::StatusCode;
     use actix_web::{test, App};
-    use siege_core::TopicDetail;
+    use siege_api_spec::{KafkaProperties, TopicDetail};
 
     use crate::kafka::mock::MockKafkaBackend;
     use crate::routes::configure;
@@ -103,7 +103,7 @@ mod tests {
             name: name.into(),
             partitions: 3,
             replication_factor: 1,
-            config: HashMap::new(),
+            config: KafkaProperties::new(),
         }
     }
 
@@ -124,7 +124,7 @@ mod tests {
         let resp = test::call_service(&app, req).await;
         assert_eq!(resp.status(), StatusCode::OK);
 
-        let body: Vec<siege_core::Topic> = test::read_body_json(resp).await;
+        let body: Vec<siege_api_spec::Topic> = test::read_body_json(resp).await;
         assert_eq!(body.len(), 2);
     }
 
@@ -239,7 +239,7 @@ mod tests {
         let req = test::TestRequest::post()
             .uri("/api/topics/t/config")
             .set_json(TopicConfigUpdate {
-                config: HashMap::from([("retention.ms".into(), "1000".into())]),
+                config: HashMap::from([("retention.ms".into(), "1000".into())]).into(),
             })
             .to_request();
         let resp = test::call_service(&app, req).await;
