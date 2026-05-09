@@ -1,10 +1,12 @@
 mod components;
+mod layouts;
+mod pages;
 mod sse;
 mod state;
 
-use components::layout::Layout;
-use components::topic_detail::TopicDetailPanel;
-use components::topic_list::TopicList;
+use layouts::default::Layout;
+use pages::topics::topic_detail::TopicDetailPanel;
+use pages::topics::topic_list::TopicList;
 use dioxus::prelude::*;
 use siege_core::TopicDetail;
 use state::{AppState, Theme};

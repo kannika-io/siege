@@ -1,10 +1,11 @@
 use dioxus::prelude::*;
 
+use crate::components::ui::theme_toggle::ThemeToggle;
 use crate::state::AppState;
 
 #[component]
 pub fn Layout(children: Element) -> Element {
-    let mut state = use_context::<AppState>();
+    let state = use_context::<AppState>();
     let theme = (state.theme)();
     let theme_class = theme.css_class();
 
@@ -35,13 +36,7 @@ pub fn Layout(children: Element) -> Element {
                         }
                     }
 
-                    button {
-                        class: "flex items-center px-3 py-1.5 rounded-md text-xs text-sidebar-foreground hover:bg-subtle hover:text-sidebar-active cursor-pointer transition-colors",
-                        onclick: move |_| {
-                            state.theme.set(theme.next());
-                        },
-                        "Theme: {theme.label()}"
-                    }
+                    ThemeToggle {}
                 }
 
                 div { class: "flex-1 bg-surface rounded-xl overflow-hidden flex flex-col border border-border",
