@@ -54,7 +54,9 @@ async fn main() -> std::io::Result<()> {
     let backend_data = web::Data::new(backend);
     let broadcaster_data = web::Data::new(broadcaster);
 
-    HttpServer::new(move || {
+    let addr = ("0.0.0.0", cli.port);
+
+    let server = HttpServer::new(move || {
         App::new()
             .wrap(Cors::permissive())
             .app_data(backend_data.clone())
@@ -64,10 +66,22 @@ async fn main() -> std::io::Result<()> {
                 SwaggerUi::new("/swagger-ui/{_:.*}")
                     .url("/api-docs/openapi.json", ApiDoc::openapi()),
             )
-    })
-    .bind(("0.0.0.0", cli.port))?
-    .run()
-    .await
+    });
+
+    let server = match server.bind(addr) {
+        Ok(s) => s,
+        Err(e) if e.kind() == std::io::ErrorKind::AddrInUse => {
+            eprintln!("error: port {} is already in use — try --port <other>", addr.1);
+            std::process::exit(1);
+        }
+        Err(e) => {
+            eprintln!("error: failed to bind to {}:{} — {e}", addr.0, addr.1);
+            std::process::exit(1);
+        }
+    };
+
+    eprintln!("listening on {}:{}", addr.0, addr.1);
+    server.run().await
 }
 
 async fn seed_topics(backend: &impl KafkaBackend) {
