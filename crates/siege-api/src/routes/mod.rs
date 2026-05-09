@@ -2,7 +2,7 @@ pub mod topics;
 
 use actix_web::web;
 
-use crate::context::SiegeContext;
+use siege::SiegeContext;
 
 pub fn configure<C: SiegeContext>(cfg: &mut web::ServiceConfig) {
     cfg.service(

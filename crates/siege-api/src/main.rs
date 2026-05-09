@@ -1,4 +1,3 @@
-mod context;
 mod error;
 mod kafka;
 mod mapping;
@@ -8,12 +7,12 @@ mod sse;
 use actix_cors::Cors;
 use actix_web::{web, App, HttpServer};
 use clap::Parser;
-use siege_api_spec::ApiDoc;
 use siege::kafka::KafkaBackend;
+use siege::SiegeContext;
+use siege_api_spec::ApiDoc;
 use utoipa::OpenApi;
 use utoipa_swagger_ui::SwaggerUi;
 
-use context::SiegeContext;
 use kafka::rdkafka_backend::RdKafkaBackend;
 use sse::broadcaster::Broadcaster;
 
@@ -24,6 +23,7 @@ struct Siege {
 
 impl SiegeContext for Siege {
     type Kafka = RdKafkaBackend;
+    type Events = Broadcaster;
 
     fn kafka(&self) -> &RdKafkaBackend {
         &self.kafka
@@ -70,17 +70,20 @@ async fn main() -> std::io::Result<()> {
         .await;
     });
 
-    let ctx = web::Data::new(Siege {
+    let broadcaster_data = web::Data::new(broadcaster.clone());
+
+    let client = web::Data::new(siege::client::Client::new(Siege {
         kafka: backend,
         events: broadcaster,
-    });
+    }));
 
     let addr = ("0.0.0.0", cli.port);
 
     let server = HttpServer::new(move || {
         App::new()
             .wrap(Cors::permissive())
-            .app_data(ctx.clone())
+            .app_data(client.clone())
+            .app_data(broadcaster_data.clone())
             .configure(routes::configure::<Siege>)
             .service(
                 SwaggerUi::new("/swagger-ui/{_:.*}")

@@ -1,74 +1,74 @@
 use actix_web::{web, HttpResponse};
 use futures::StreamExt;
+use siege::SiegeContext;
 use siege_api_spec::{CreateTopicRequest, SseEvent, TopicConfigUpdateRequest, TopicResource};
 
-use crate::context::SiegeContext;
 use crate::error::HttpError;
 use crate::mapping;
+use crate::sse::broadcaster::Broadcaster;
 
 pub async fn list_topics<C: SiegeContext>(
-    ctx: web::Data<C>,
+    client: web::Data<siege::client::Client<C>>,
 ) -> Result<HttpResponse, HttpError> {
-    let topics = siege::usecase::topics::list_topics(ctx.kafka()).await?;
+    let topics = client.topics().list().await?;
     let resources: Vec<TopicResource> = topics.into_iter().map(mapping::topic_to_resource).collect();
     Ok(HttpResponse::Ok().json(resources))
 }
 
 pub async fn get_topic<C: SiegeContext>(
-    ctx: web::Data<C>,
+    client: web::Data<siege::client::Client<C>>,
     path: web::Path<String>,
 ) -> Result<HttpResponse, HttpError> {
     let name = path.into_inner();
-    let detail = siege::usecase::topics::get_topic(ctx.kafka(), &name).await?;
+    let detail = client.topics().get(&name).await?;
     Ok(HttpResponse::Ok().json(mapping::detail_to_resource(detail)))
 }
 
 pub async fn create_topic<C: SiegeContext>(
-    ctx: web::Data<C>,
+    client: web::Data<siege::client::Client<C>>,
     body: web::Json<CreateTopicRequest>,
 ) -> Result<HttpResponse, HttpError> {
     let req = body.into_inner();
-    siege::usecase::topics::create_topic(
-        ctx.kafka(),
-        &req.name,
-        req.partitions,
-        req.replication_factor,
-    )
-    .await?;
+    client
+        .topics()
+        .create(&req.name, req.partitions, req.replication_factor)
+        .await?;
     Ok(HttpResponse::Created().finish())
 }
 
 pub async fn delete_topic<C: SiegeContext>(
-    ctx: web::Data<C>,
+    client: web::Data<siege::client::Client<C>>,
     path: web::Path<String>,
 ) -> Result<HttpResponse, HttpError> {
     let name = path.into_inner();
-    siege::usecase::topics::delete_topic(ctx.kafka(), &name).await?;
+    client.topics().delete(&name).await?;
     Ok(HttpResponse::NoContent().finish())
 }
 
 pub async fn update_topic_config<C: SiegeContext>(
-    ctx: web::Data<C>,
+    client: web::Data<siege::client::Client<C>>,
     path: web::Path<String>,
     body: web::Json<TopicConfigUpdateRequest>,
 ) -> Result<HttpResponse, HttpError> {
     let name = path.into_inner();
-    siege::usecase::topics::update_topic_config(ctx.kafka(), &name, body.into_inner().config)
+    client
+        .topics()
+        .update_config(&name, body.into_inner().config)
         .await?;
     Ok(HttpResponse::Ok().finish())
 }
 
-pub async fn events<C: SiegeContext>(ctx: web::Data<C>) -> HttpResponse {
-    let topics = siege::usecase::topics::list_topics(ctx.kafka())
-        .await
-        .unwrap_or_default();
-    let resources: Vec<TopicResource> = topics.into_iter().map(mapping::topic_to_resource).collect();
-    let rx = ctx.events().subscribe();
+pub async fn events<C: SiegeContext>(
+    client: web::Data<siege::client::Client<C>>,
+    broadcaster: web::Data<Broadcaster>,
+) -> HttpResponse {
+    let topics = client.topics().list().await.unwrap_or_default();
+    let resources: Vec<TopicResource> =
+        topics.into_iter().map(mapping::topic_to_resource).collect();
+    let rx = broadcaster.subscribe();
 
-    let snapshot_data = serde_json::to_string(&SseEvent::TopicsSnapshot {
-        topics: resources,
-    })
-    .unwrap();
+    let snapshot_data =
+        serde_json::to_string(&SseEvent::TopicsSnapshot { topics: resources }).unwrap();
 
     let initial = futures::stream::once(async move {
         Ok::<_, actix_web::Error>(actix_web::web::Bytes::from(format!(
@@ -98,7 +98,7 @@ mod tests {
 
     use actix_web::http::StatusCode;
     use actix_web::{test, App};
-    use siege::{KafkaProperties, TopicDetail};
+    use siege::{KafkaProperties, SiegeContext, TopicDetail};
 
     use crate::kafka::mock::MockKafkaBackend;
     use crate::routes::configure;
@@ -113,6 +113,7 @@ mod tests {
 
     impl SiegeContext for MockContext {
         type Kafka = MockKafkaBackend;
+        type Events = Broadcaster;
 
         fn kafka(&self) -> &MockKafkaBackend {
             &self.kafka
@@ -139,15 +140,27 @@ mod tests {
         }
     }
 
+    fn test_app(
+        ctx: MockContext,
+    ) -> (
+        web::Data<siege::client::Client<MockContext>>,
+        web::Data<Broadcaster>,
+    ) {
+        let broadcaster = web::Data::new(ctx.events.clone());
+        let client = web::Data::new(siege::client::Client::new(ctx));
+        (client, broadcaster)
+    }
+
     #[actix_web::test]
     async fn test_list_topics() {
-        let ctx = mock_ctx(MockKafkaBackend::with_topics(vec![
+        let (client, broadcaster) = test_app(mock_ctx(MockKafkaBackend::with_topics(vec![
             sample_detail("topic-a"),
             sample_detail("topic-b"),
-        ]));
+        ])));
         let app = test::init_service(
             App::new()
-                .app_data(web::Data::new(ctx))
+                .app_data(client)
+                .app_data(broadcaster)
                 .configure(configure::<MockContext>),
         )
         .await;
@@ -162,12 +175,13 @@ mod tests {
 
     #[actix_web::test]
     async fn test_get_topic_found() {
-        let ctx = mock_ctx(MockKafkaBackend::with_topics(vec![sample_detail(
-            "my-topic",
-        )]));
+        let (client, broadcaster) = test_app(mock_ctx(MockKafkaBackend::with_topics(vec![
+            sample_detail("my-topic"),
+        ])));
         let app = test::init_service(
             App::new()
-                .app_data(web::Data::new(ctx))
+                .app_data(client)
+                .app_data(broadcaster)
                 .configure(configure::<MockContext>),
         )
         .await;
@@ -184,10 +198,11 @@ mod tests {
 
     #[actix_web::test]
     async fn test_get_topic_not_found() {
-        let ctx = mock_ctx(MockKafkaBackend::new());
+        let (client, broadcaster) = test_app(mock_ctx(MockKafkaBackend::new()));
         let app = test::init_service(
             App::new()
-                .app_data(web::Data::new(ctx))
+                .app_data(client)
+                .app_data(broadcaster)
                 .configure(configure::<MockContext>),
         )
         .await;
@@ -201,10 +216,11 @@ mod tests {
 
     #[actix_web::test]
     async fn test_create_topic() {
-        let ctx = mock_ctx(MockKafkaBackend::new());
+        let (client, broadcaster) = test_app(mock_ctx(MockKafkaBackend::new()));
         let app = test::init_service(
             App::new()
-                .app_data(web::Data::new(ctx))
+                .app_data(client)
+                .app_data(broadcaster)
                 .configure(configure::<MockContext>),
         )
         .await;
@@ -223,10 +239,13 @@ mod tests {
 
     #[actix_web::test]
     async fn test_create_topic_conflict() {
-        let ctx = mock_ctx(MockKafkaBackend::with_topics(vec![sample_detail("exists")]));
+        let (client, broadcaster) = test_app(mock_ctx(MockKafkaBackend::with_topics(vec![
+            sample_detail("exists"),
+        ])));
         let app = test::init_service(
             App::new()
-                .app_data(web::Data::new(ctx))
+                .app_data(client)
+                .app_data(broadcaster)
                 .configure(configure::<MockContext>),
         )
         .await;
@@ -245,10 +264,13 @@ mod tests {
 
     #[actix_web::test]
     async fn test_delete_topic() {
-        let ctx = mock_ctx(MockKafkaBackend::with_topics(vec![sample_detail("doomed")]));
+        let (client, broadcaster) = test_app(mock_ctx(MockKafkaBackend::with_topics(vec![
+            sample_detail("doomed"),
+        ])));
         let app = test::init_service(
             App::new()
-                .app_data(web::Data::new(ctx))
+                .app_data(client)
+                .app_data(broadcaster)
                 .configure(configure::<MockContext>),
         )
         .await;
@@ -262,10 +284,13 @@ mod tests {
 
     #[actix_web::test]
     async fn test_update_topic_config() {
-        let ctx = mock_ctx(MockKafkaBackend::with_topics(vec![sample_detail("t")]));
+        let (client, broadcaster) = test_app(mock_ctx(MockKafkaBackend::with_topics(vec![
+            sample_detail("t"),
+        ])));
         let app = test::init_service(
             App::new()
-                .app_data(web::Data::new(ctx))
+                .app_data(client)
+                .app_data(broadcaster)
                 .configure(configure::<MockContext>),
         )
         .await;
