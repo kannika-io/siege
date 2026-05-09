@@ -9,7 +9,7 @@ use crate::mapping;
 pub async fn list_topics<C: SiegeContext>(
     ctx: web::Data<C>,
 ) -> Result<HttpResponse, HttpError> {
-    let topics = siege_core::usecase::topics::list_topics(ctx.kafka()).await?;
+    let topics = siege::usecase::topics::list_topics(ctx.kafka()).await?;
     let resources: Vec<TopicResource> = topics.into_iter().map(mapping::topic_to_resource).collect();
     Ok(HttpResponse::Ok().json(resources))
 }
@@ -19,7 +19,7 @@ pub async fn get_topic<C: SiegeContext>(
     path: web::Path<String>,
 ) -> Result<HttpResponse, HttpError> {
     let name = path.into_inner();
-    let detail = siege_core::usecase::topics::get_topic(ctx.kafka(), &name).await?;
+    let detail = siege::usecase::topics::get_topic(ctx.kafka(), &name).await?;
     Ok(HttpResponse::Ok().json(mapping::detail_to_resource(detail)))
 }
 
@@ -28,7 +28,7 @@ pub async fn create_topic<C: SiegeContext>(
     body: web::Json<CreateTopicRequest>,
 ) -> Result<HttpResponse, HttpError> {
     let req = body.into_inner();
-    siege_core::usecase::topics::create_topic(
+    siege::usecase::topics::create_topic(
         ctx.kafka(),
         &req.name,
         req.partitions,
@@ -43,7 +43,7 @@ pub async fn delete_topic<C: SiegeContext>(
     path: web::Path<String>,
 ) -> Result<HttpResponse, HttpError> {
     let name = path.into_inner();
-    siege_core::usecase::topics::delete_topic(ctx.kafka(), &name).await?;
+    siege::usecase::topics::delete_topic(ctx.kafka(), &name).await?;
     Ok(HttpResponse::NoContent().finish())
 }
 
@@ -53,13 +53,13 @@ pub async fn update_topic_config<C: SiegeContext>(
     body: web::Json<TopicConfigUpdateRequest>,
 ) -> Result<HttpResponse, HttpError> {
     let name = path.into_inner();
-    siege_core::usecase::topics::update_topic_config(ctx.kafka(), &name, body.into_inner().config)
+    siege::usecase::topics::update_topic_config(ctx.kafka(), &name, body.into_inner().config)
         .await?;
     Ok(HttpResponse::Ok().finish())
 }
 
 pub async fn events<C: SiegeContext>(ctx: web::Data<C>) -> HttpResponse {
-    let topics = siege_core::usecase::topics::list_topics(ctx.kafka())
+    let topics = siege::usecase::topics::list_topics(ctx.kafka())
         .await
         .unwrap_or_default();
     let resources: Vec<TopicResource> = topics.into_iter().map(mapping::topic_to_resource).collect();
@@ -98,7 +98,7 @@ mod tests {
 
     use actix_web::http::StatusCode;
     use actix_web::{test, App};
-    use siege_core::{KafkaProperties, TopicDetail};
+    use siege::{KafkaProperties, TopicDetail};
 
     use crate::kafka::mock::MockKafkaBackend;
     use crate::routes::configure;

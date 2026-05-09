@@ -1,4 +1,4 @@
-use siege_core::kafka::KafkaBackend;
+use siege::kafka::KafkaBackend;
 
 use crate::sse::broadcaster::Broadcaster;
 

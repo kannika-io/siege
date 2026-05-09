@@ -1,1 +1,1 @@
-pub use siege_core::kafka::KafkaBackend;
+pub use siege::kafka::KafkaBackend;

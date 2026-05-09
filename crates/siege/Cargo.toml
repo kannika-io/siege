@@ -1,5 +1,5 @@
 [package]
-name = "siege-core"
+name = "siege"
 version.workspace = true
 edition.workspace = true
 

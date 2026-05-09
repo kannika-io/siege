@@ -4,7 +4,7 @@ version.workspace = true
 edition.workspace = true
 
 [dependencies]
-siege-core.workspace = true
+siege.workspace = true
 siege-api-spec.workspace = true
 actix-web.workspace = true
 actix-cors.workspace = true

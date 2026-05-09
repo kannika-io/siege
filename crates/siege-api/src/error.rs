@@ -50,13 +50,13 @@ impl ResponseError for HttpError {
     }
 }
 
-impl From<siege_core::SiegeError> for HttpError {
-    fn from(e: siege_core::SiegeError) -> Self {
+impl From<siege::SiegeError> for HttpError {
+    fn from(e: siege::SiegeError) -> Self {
         match e {
-            siege_core::SiegeError::TopicNotFound(s) => Self::not_found(s),
-            siege_core::SiegeError::TopicAlreadyExists(s) => Self::conflict(s),
-            siege_core::SiegeError::KafkaError(s) => Self::bad_gateway(s),
-            siege_core::SiegeError::Internal(s) => Self::internal(s),
+            siege::SiegeError::TopicNotFound(s) => Self::not_found(s),
+            siege::SiegeError::TopicAlreadyExists(s) => Self::conflict(s),
+            siege::SiegeError::KafkaError(s) => Self::bad_gateway(s),
+            siege::SiegeError::Internal(s) => Self::internal(s),
         }
     }
 }

@@ -7,9 +7,9 @@ use rdkafka::admin::{
 };
 use rdkafka::client::DefaultClientContext;
 use rdkafka::config::ClientConfig;
-use siege_core::kafka::KafkaBackend;
-use siege_core::{SiegeError, Topic, TopicDetail};
-use siege_core::KafkaProperties;
+use siege::kafka::KafkaBackend;
+use siege::{SiegeError, Topic, TopicDetail};
+use siege::KafkaProperties;
 
 #[derive(Clone)]
 pub struct RdKafkaBackend {

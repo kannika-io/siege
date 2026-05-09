@@ -1,9 +1,9 @@
 use std::collections::HashMap;
 use std::sync::{Arc, Mutex};
 
-use siege_core::kafka::KafkaBackend;
-use siege_core::{SiegeError, Topic, TopicDetail};
-use siege_core::KafkaProperties;
+use siege::kafka::KafkaBackend;
+use siege::{SiegeError, Topic, TopicDetail};
+use siege::KafkaProperties;
 
 #[derive(Clone, Default)]
 pub struct MockKafkaBackend {

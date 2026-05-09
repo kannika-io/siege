@@ -9,7 +9,7 @@ use actix_cors::Cors;
 use actix_web::{web, App, HttpServer};
 use clap::Parser;
 use siege_api_spec::ApiDoc;
-use siege_core::kafka::KafkaBackend;
+use siege::kafka::KafkaBackend;
 use utoipa::OpenApi;
 use utoipa_swagger_ui::SwaggerUi;
 

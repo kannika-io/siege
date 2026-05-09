@@ -1,5 +1,5 @@
 use siege_api_spec::{TopicDetailResource, TopicResource};
-use siege_core::{Topic, TopicDetail};
+use siege::{Topic, TopicDetail};
 
 pub fn topic_to_resource(t: Topic) -> TopicResource {
     TopicResource {
