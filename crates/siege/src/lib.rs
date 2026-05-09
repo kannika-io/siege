@@ -3,8 +3,8 @@ mod error;
 mod event;
 mod topic;
 
+pub mod client;
 pub mod kafka;
-pub mod usecase;
 
 pub use context::*;
 pub use error::*;

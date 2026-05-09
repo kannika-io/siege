@@ -3422,6 +3422,17 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "0fda2ff0d084019ba4d7c6f371c95d8fd75ce3524c3cb8fb653a3023f6323e64"
 
 [[package]]
+name = "siege"
+version = "0.1.0"
+dependencies = [
+ "serde",
+ "serde_json",
+ "siege-kernel",
+ "thiserror 2.0.18",
+ "tokio",
+]
+
+[[package]]
 name = "siege-api"
 version = "0.1.0"
 dependencies = [
@@ -3432,8 +3443,8 @@ dependencies = [
  "rdkafka",
  "serde",
  "serde_json",
+ "siege",
  "siege-api-spec",
- "siege-core",
  "tokio",
  "tokio-stream",
  "utoipa",
@@ -3472,16 +3483,6 @@ dependencies = [
  "siege-api-client",
  "wasm-bindgen",
  "web-sys",
-]
-
-[[package]]
-name = "siege-core"
-version = "0.1.0"
-dependencies = [
- "serde",
- "serde_json",
- "siege-kernel",
- "thiserror 2.0.18",
 ]
 
 [[package]]
