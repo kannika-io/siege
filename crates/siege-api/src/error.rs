@@ -1,31 +1,62 @@
 use actix_web::http::StatusCode;
 use actix_web::{HttpResponse, ResponseError};
-use siege_api_spec::SiegeError;
 use std::fmt;
 
 #[derive(Debug)]
-pub struct ApiError(pub SiegeError);
+pub struct HttpError {
+    pub status: StatusCode,
+    pub body: serde_json::Value,
+}
 
-impl fmt::Display for ApiError {
+impl HttpError {
+    pub fn not_found(detail: impl Into<String>) -> Self {
+        Self {
+            status: StatusCode::NOT_FOUND,
+            body: serde_json::json!({ "error": "NotFound", "detail": detail.into() }),
+        }
+    }
+
+    pub fn conflict(detail: impl Into<String>) -> Self {
+        Self {
+            status: StatusCode::CONFLICT,
+            body: serde_json::json!({ "error": "Conflict", "detail": detail.into() }),
+        }
+    }
+
+    pub fn bad_gateway(detail: impl Into<String>) -> Self {
+        Self {
+            status: StatusCode::BAD_GATEWAY,
+            body: serde_json::json!({ "error": "BadGateway", "detail": detail.into() }),
+        }
+    }
+
+    pub fn internal(detail: impl Into<String>) -> Self {
+        Self {
+            status: StatusCode::INTERNAL_SERVER_ERROR,
+            body: serde_json::json!({ "error": "Internal", "detail": detail.into() }),
+        }
+    }
+}
+
+impl fmt::Display for HttpError {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        write!(f, "{}", self.0)
+        write!(f, "{}", self.status)
     }
 }
 
-impl ResponseError for ApiError {
+impl ResponseError for HttpError {
     fn error_response(&self) -> HttpResponse {
-        let status = match &self.0 {
-            SiegeError::TopicNotFound(_) => StatusCode::NOT_FOUND,
-            SiegeError::TopicAlreadyExists(_) => StatusCode::CONFLICT,
-            SiegeError::KafkaError(_) => StatusCode::BAD_GATEWAY,
-            SiegeError::Internal(_) => StatusCode::INTERNAL_SERVER_ERROR,
-        };
-        HttpResponse::build(status).json(&self.0)
+        HttpResponse::build(self.status).json(&self.body)
     }
 }
 
-impl From<SiegeError> for ApiError {
-    fn from(e: SiegeError) -> Self {
-        ApiError(e)
+impl From<siege_core::SiegeError> for HttpError {
+    fn from(e: siege_core::SiegeError) -> Self {
+        match e {
+            siege_core::SiegeError::TopicNotFound(s) => Self::not_found(s),
+            siege_core::SiegeError::TopicAlreadyExists(s) => Self::conflict(s),
+            siege_core::SiegeError::KafkaError(s) => Self::bad_gateway(s),
+            siege_core::SiegeError::Internal(s) => Self::internal(s),
+        }
     }
 }

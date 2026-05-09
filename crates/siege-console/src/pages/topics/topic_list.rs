@@ -1,5 +1,5 @@
 use dioxus::prelude::*;
-use siege_api_client::Topic;
+use siege_api_client::TopicResource;
 
 use super::topic_pills::TopicPills;
 use crate::state::AppState;
@@ -36,7 +36,7 @@ pub fn TopicList() -> Element {
 }
 
 #[component]
-fn TopicRow(topic: Topic) -> Element {
+fn TopicRow(topic: TopicResource) -> Element {
     let mut state = use_context::<AppState>();
     let name = topic.name.clone();
 

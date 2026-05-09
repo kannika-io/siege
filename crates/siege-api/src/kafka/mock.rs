@@ -1,9 +1,9 @@
 use std::collections::HashMap;
 use std::sync::{Arc, Mutex};
 
-use siege_api_spec::*;
-
-use super::backend::KafkaBackend;
+use siege_core::kafka::KafkaBackend;
+use siege_core::{SiegeError, Topic, TopicDetail};
+use siege_core::KafkaProperties;
 
 #[derive(Clone, Default)]
 pub struct MockKafkaBackend {
@@ -52,19 +52,22 @@ impl KafkaBackend for MockKafkaBackend {
 
     fn create_topic(
         &self,
-        req: CreateTopicRequest,
+        name: &str,
+        partitions: i32,
+        replication_factor: i32,
     ) -> impl Future<Output = Result<(), SiegeError>> + Send {
+        let name = name.to_owned();
         let result = {
             let mut topics = self.topics.lock().unwrap();
-            if topics.contains_key(&req.name) {
-                Err(SiegeError::TopicAlreadyExists(req.name.clone()))
+            if topics.contains_key(&name) {
+                Err(SiegeError::TopicAlreadyExists(name.clone()))
             } else {
                 topics.insert(
-                    req.name.clone(),
+                    name.clone(),
                     TopicDetail {
-                        name: req.name,
-                        partitions: req.partitions,
-                        replication_factor: req.replication_factor,
+                        name,
+                        partitions,
+                        replication_factor,
                         config: KafkaProperties::new(),
                     },
                 );
@@ -89,14 +92,13 @@ impl KafkaBackend for MockKafkaBackend {
     fn update_topic_config(
         &self,
         name: &str,
-        config: TopicConfigUpdate,
+        config: KafkaProperties,
     ) -> impl Future<Output = Result<(), SiegeError>> + Send {
         let result = {
             let mut topics = self.topics.lock().unwrap();
             match topics.get_mut(name) {
                 Some(detail) => {
-                    detail.config.extend(config.config);
-
+                    detail.config.extend(config);
                     Ok(())
                 }
                 None => Err(SiegeError::TopicNotFound(name.to_owned())),
@@ -147,14 +149,7 @@ mod tests {
     #[tokio::test]
     async fn create_topic_success() {
         let backend = MockKafkaBackend::new();
-        backend
-            .create_topic(CreateTopicRequest {
-                name: "new".into(),
-                partitions: 6,
-                replication_factor: 3,
-            })
-            .await
-            .unwrap();
+        backend.create_topic("new", 6, 3).await.unwrap();
         let detail = backend.get_topic("new").await.unwrap();
         assert_eq!(detail.partitions, 6);
     }
@@ -162,14 +157,7 @@ mod tests {
     #[tokio::test]
     async fn create_topic_already_exists() {
         let backend = MockKafkaBackend::with_topics(vec![sample_detail("existing")]);
-        let err = backend
-            .create_topic(CreateTopicRequest {
-                name: "existing".into(),
-                partitions: 1,
-                replication_factor: 1,
-            })
-            .await
-            .unwrap_err();
+        let err = backend.create_topic("existing", 1, 1).await.unwrap_err();
         assert!(matches!(err, SiegeError::TopicAlreadyExists(_)));
     }
 
@@ -183,15 +171,9 @@ mod tests {
     #[tokio::test]
     async fn update_config_merges() {
         let backend = MockKafkaBackend::with_topics(vec![sample_detail("t")]);
-        backend
-            .update_topic_config(
-                "t",
-                TopicConfigUpdate {
-                    config: HashMap::from([("retention.ms".into(), "1000".into())]).into(),
-                },
-            )
-            .await
-            .unwrap();
+        let config: KafkaProperties =
+            HashMap::from([("retention.ms".into(), "1000".into())]).into();
+        backend.update_topic_config("t", config).await.unwrap();
         let detail = backend.get_topic("t").await.unwrap();
         assert_eq!(detail.config.get("retention.ms").unwrap(), "1000");
     }

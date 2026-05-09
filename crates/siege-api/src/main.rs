@@ -1,5 +1,7 @@
+mod context;
 mod error;
 mod kafka;
+mod mapping;
 mod routes;
 mod sse;
 
@@ -7,13 +9,30 @@ use actix_cors::Cors;
 use actix_web::{web, App, HttpServer};
 use clap::Parser;
 use siege_api_spec::ApiDoc;
+use siege_core::kafka::KafkaBackend;
 use utoipa::OpenApi;
 use utoipa_swagger_ui::SwaggerUi;
 
-use kafka::backend::KafkaBackend;
+use context::SiegeContext;
 use kafka::rdkafka_backend::RdKafkaBackend;
-use siege_api_spec::CreateTopicRequest;
 use sse::broadcaster::Broadcaster;
+
+struct Siege {
+    kafka: RdKafkaBackend,
+    events: Broadcaster,
+}
+
+impl SiegeContext for Siege {
+    type Kafka = RdKafkaBackend;
+
+    fn kafka(&self) -> &RdKafkaBackend {
+        &self.kafka
+    }
+
+    fn events(&self) -> &Broadcaster {
+        &self.events
+    }
+}
 
 #[derive(Parser)]
 #[command(name = "siege-api", about = "Kafka topic management API")]
@@ -51,17 +70,18 @@ async fn main() -> std::io::Result<()> {
         .await;
     });
 
-    let backend_data = web::Data::new(backend);
-    let broadcaster_data = web::Data::new(broadcaster);
+    let ctx = web::Data::new(Siege {
+        kafka: backend,
+        events: broadcaster,
+    });
 
     let addr = ("0.0.0.0", cli.port);
 
     let server = HttpServer::new(move || {
         App::new()
             .wrap(Cors::permissive())
-            .app_data(backend_data.clone())
-            .app_data(broadcaster_data.clone())
-            .configure(routes::configure::<RdKafkaBackend>)
+            .app_data(ctx.clone())
+            .configure(routes::configure::<Siege>)
             .service(
                 SwaggerUi::new("/swagger-ui/{_:.*}")
                     .url("/api-docs/openapi.json", ApiDoc::openapi()),
@@ -71,7 +91,10 @@ async fn main() -> std::io::Result<()> {
     let server = match server.bind(addr) {
         Ok(s) => s,
         Err(e) if e.kind() == std::io::ErrorKind::AddrInUse => {
-            eprintln!("error: port {} is already in use — try --port <other>", addr.1);
+            eprintln!(
+                "error: port {} is already in use — try --port <other>",
+                addr.1
+            );
             std::process::exit(1);
         }
         Err(e) => {
@@ -94,14 +117,7 @@ async fn seed_topics(backend: &impl KafkaBackend) {
     ];
 
     for (name, partitions, rf) in seeds {
-        match backend
-            .create_topic(CreateTopicRequest {
-                name: name.into(),
-                partitions,
-                replication_factor: rf,
-            })
-            .await
-        {
+        match backend.create_topic(name, partitions, rf).await {
             Ok(()) => eprintln!("seeded topic: {name}"),
             Err(e) => eprintln!("seed {name}: {e}"),
         }

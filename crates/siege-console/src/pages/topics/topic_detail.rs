@@ -1,11 +1,11 @@
 use dioxus::prelude::*;
-use siege_api_client::TopicDetail;
+use siege_api_client::TopicDetailResource;
 
 use super::topic_pills::TopicPills;
 use crate::state::AppState;
 
 #[component]
-pub fn TopicDetailPanel(detail: TopicDetail) -> Element {
+pub fn TopicDetailPanel(detail: TopicDetailResource) -> Element {
     let mut state = use_context::<AppState>();
     let name = detail.name.clone();
 

@@ -7,9 +7,9 @@ use rdkafka::admin::{
 };
 use rdkafka::client::DefaultClientContext;
 use rdkafka::config::ClientConfig;
-use siege_api_spec::*;
-
-use super::backend::KafkaBackend;
+use siege_core::kafka::KafkaBackend;
+use siege_core::{SiegeError, Topic, TopicDetail};
+use siege_core::KafkaProperties;
 
 #[derive(Clone)]
 pub struct RdKafkaBackend {
@@ -113,14 +113,17 @@ impl KafkaBackend for RdKafkaBackend {
 
     fn create_topic(
         &self,
-        req: CreateTopicRequest,
+        name: &str,
+        partitions: i32,
+        replication_factor: i32,
     ) -> impl Future<Output = Result<(), SiegeError>> + Send {
         let admin = self.admin.clone();
+        let name = name.to_owned();
         async move {
             let new_topic = NewTopic::new(
-                &req.name,
-                req.partitions,
-                TopicReplication::Fixed(req.replication_factor),
+                &name,
+                partitions,
+                TopicReplication::Fixed(replication_factor),
             );
 
             let results = admin
@@ -160,13 +163,13 @@ impl KafkaBackend for RdKafkaBackend {
     fn update_topic_config(
         &self,
         name: &str,
-        config: TopicConfigUpdate,
+        config: KafkaProperties,
     ) -> impl Future<Output = Result<(), SiegeError>> + Send {
         let admin = self.admin.clone();
         let name = name.to_owned();
         async move {
             let mut alter = AlterConfig::new(ResourceSpecifier::Topic(&name));
-            for (key, value) in config.config.iter() {
+            for (key, value) in config.iter() {
                 alter = alter.set(key, value);
             }
 

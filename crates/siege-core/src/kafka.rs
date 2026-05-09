@@ -1,0 +1,22 @@
+use std::future::Future;
+
+use siege_kernel::KafkaProperties;
+
+use crate::{SiegeError, Topic, TopicDetail};
+
+pub trait KafkaBackend: Send + Sync + 'static {
+    fn list_topics(&self) -> impl Future<Output = Result<Vec<Topic>, SiegeError>> + Send;
+    fn get_topic(&self, name: &str) -> impl Future<Output = Result<TopicDetail, SiegeError>> + Send;
+    fn create_topic(
+        &self,
+        name: &str,
+        partitions: i32,
+        replication_factor: i32,
+    ) -> impl Future<Output = Result<(), SiegeError>> + Send;
+    fn delete_topic(&self, name: &str) -> impl Future<Output = Result<(), SiegeError>> + Send;
+    fn update_topic_config(
+        &self,
+        name: &str,
+        config: KafkaProperties,
+    ) -> impl Future<Output = Result<(), SiegeError>> + Send;
+}

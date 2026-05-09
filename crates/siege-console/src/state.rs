@@ -1,6 +1,6 @@
 use dioxus::prelude::*;
 use siege_api_client::SiegeClient;
-use siege_api_client::{Topic, TopicDetail};
+use siege_api_client::{TopicDetailResource, TopicResource};
 
 #[derive(Clone, Copy, PartialEq)]
 pub enum Theme {
@@ -37,8 +37,8 @@ impl Theme {
 
 #[derive(Clone, Copy)]
 pub struct AppState {
-    pub topics: Signal<Vec<Topic>>,
-    pub selected_topic: Signal<Option<TopicDetail>>,
+    pub topics: Signal<Vec<TopicResource>>,
+    pub selected_topic: Signal<Option<TopicDetailResource>>,
     pub theme: Signal<Theme>,
     pub api_url: &'static str,
 }

@@ -2,6 +2,7 @@
 resolver = "2"
 members = [
     "crates/siege-kernel",
+    "crates/siege-core",
     "crates/siege-api-spec",
     "crates/siege-api",
     "crates/siege-api-client",
@@ -15,6 +16,7 @@ edition = "2024"
 [workspace.dependencies]
 # Internal crates
 siege-kernel = { path = "crates/siege-kernel" }
+siege-core = { path = "crates/siege-core" }
 siege-api-spec = { path = "crates/siege-api-spec" }
 siege-api-client = { path = "crates/siege-api-client" }
 

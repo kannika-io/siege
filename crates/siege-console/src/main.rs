@@ -8,7 +8,7 @@ use layouts::default::Layout;
 use pages::topics::topic_detail::TopicDetailPanel;
 use pages::topics::topic_list::TopicList;
 use dioxus::prelude::*;
-use siege_api_client::TopicDetail;
+use siege_api_client::TopicDetailResource;
 use state::{AppState, Theme};
 
 const API_URL: &str = "http://localhost:8080";
@@ -19,7 +19,7 @@ fn main() {
 
 fn App() -> Element {
     let topics = use_signal(Vec::new);
-    let selected_topic = use_signal(|| None::<TopicDetail>);
+    let selected_topic = use_signal(|| None::<TopicDetailResource>);
     let theme = use_signal(|| Theme::Dark);
 
     use_context_provider(|| AppState {

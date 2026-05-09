@@ -1,6 +1,6 @@
 pub use siege_api_spec::{
-    CreateTopicRequest, KafkaProperties, SiegeError, SseEvent, Topic, TopicConfigUpdate,
-    TopicDetail,
+    CreateTopicRequest, KafkaProperties, SseEvent, TopicConfigUpdateRequest, TopicDetailResource,
+    TopicResource,
 };
 use thiserror::Error;
 
@@ -8,8 +8,8 @@ use thiserror::Error;
 pub enum ClientError {
     #[error("HTTP error: {0}")]
     Http(#[from] reqwest::Error),
-    #[error("API error: {0}")]
-    Api(SiegeError),
+    #[error("API error ({status}): {body}")]
+    Api { status: u16, body: String },
 }
 
 #[derive(Clone)]
@@ -26,7 +26,13 @@ impl SiegeClient {
         }
     }
 
-    pub async fn list_topics(&self) -> Result<Vec<Topic>, ClientError> {
+    async fn api_error(resp: reqwest::Response) -> ClientError {
+        let status = resp.status().as_u16();
+        let body = resp.text().await.unwrap_or_default();
+        ClientError::Api { status, body }
+    }
+
+    pub async fn list_topics(&self) -> Result<Vec<TopicResource>, ClientError> {
         let resp = self
             .client
             .get(format!("{}/api/topics", self.base_url))
@@ -35,11 +41,11 @@ impl SiegeClient {
         if resp.status().is_success() {
             Ok(resp.json().await?)
         } else {
-            Err(ClientError::Api(resp.json().await?))
+            Err(Self::api_error(resp).await)
         }
     }
 
-    pub async fn get_topic(&self, name: &str) -> Result<TopicDetail, ClientError> {
+    pub async fn get_topic(&self, name: &str) -> Result<TopicDetailResource, ClientError> {
         let resp = self
             .client
             .get(format!("{}/api/topics/{name}", self.base_url))
@@ -48,7 +54,7 @@ impl SiegeClient {
         if resp.status().is_success() {
             Ok(resp.json().await?)
         } else {
-            Err(ClientError::Api(resp.json().await?))
+            Err(Self::api_error(resp).await)
         }
     }
 
@@ -62,7 +68,7 @@ impl SiegeClient {
         if resp.status().is_success() {
             Ok(())
         } else {
-            Err(ClientError::Api(resp.json().await?))
+            Err(Self::api_error(resp).await)
         }
     }
 
@@ -75,14 +81,14 @@ impl SiegeClient {
         if resp.status().is_success() {
             Ok(())
         } else {
-            Err(ClientError::Api(resp.json().await?))
+            Err(Self::api_error(resp).await)
         }
     }
 
     pub async fn update_topic_config(
         &self,
         name: &str,
-        config: &TopicConfigUpdate,
+        config: &TopicConfigUpdateRequest,
     ) -> Result<(), ClientError> {
         let resp = self
             .client
@@ -93,7 +99,7 @@ impl SiegeClient {
         if resp.status().is_success() {
             Ok(())
         } else {
-            Err(ClientError::Api(resp.json().await?))
+            Err(Self::api_error(resp).await)
         }
     }
 }

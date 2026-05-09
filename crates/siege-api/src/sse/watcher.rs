@@ -1,10 +1,10 @@
 use std::collections::HashSet;
 use std::time::Duration;
 
-use siege_api_spec::SseEvent;
+use siege_api_spec::{SseEvent, TopicResource};
+use siege_core::kafka::KafkaBackend;
 
 use super::broadcaster::Broadcaster;
-use crate::kafka::backend::KafkaBackend;
 
 pub async fn watch_cluster<K: KafkaBackend>(
     backend: &K,
@@ -26,7 +26,11 @@ pub async fn watch_cluster<K: KafkaBackend>(
         for topic in &topics {
             if !known_names.contains(&topic.name) {
                 broadcaster.send(SseEvent::TopicCreated {
-                    topic: topic.clone(),
+                    topic: TopicResource {
+                        name: topic.name.clone(),
+                        partitions: topic.partitions,
+                        replication_factor: topic.replication_factor,
+                    },
                 });
             }
         }
@@ -45,7 +49,8 @@ pub async fn watch_cluster<K: KafkaBackend>(
 
 #[cfg(test)]
 mod tests {
-    use siege_api_spec::{CreateTopicRequest, KafkaProperties, TopicDetail};
+    use siege_core::TopicDetail;
+    use siege_core::KafkaProperties;
 
     use super::*;
     use crate::kafka::mock::MockKafkaBackend;
@@ -64,14 +69,7 @@ mod tests {
 
         tokio::time::sleep(Duration::from_millis(100)).await;
 
-        backend
-            .create_topic(CreateTopicRequest {
-                name: "new-topic".into(),
-                partitions: 1,
-                replication_factor: 1,
-            })
-            .await
-            .unwrap();
+        backend.create_topic("new-topic", 1, 1).await.unwrap();
 
         let event = tokio::time::timeout(Duration::from_millis(200), rx.recv())
             .await
