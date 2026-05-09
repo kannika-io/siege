@@ -9,15 +9,25 @@ pub fn TopicList() -> Element {
     let topics = state.topics;
 
     rsx! {
-        h2 { class: "font-medieval text-gold text-2xl", "The Kingdom" }
+        div { class: "flex items-center justify-between px-6 py-4 border-b border-border",
+            div { class: "flex items-center gap-3",
+                h1 { class: "text-sm font-semibold", "Topics" }
+                if !topics().is_empty() {
+                    span { class: "text-xs text-muted-foreground bg-muted px-1.5 py-0.5 rounded",
+                        "{topics().len()}"
+                    }
+                }
+            }
+        }
+
         if topics().is_empty() {
-            div { class: "text-center py-12 text-parchment-dim italic",
-                "Discovering topics..."
+            div { class: "flex-1 flex items-center justify-center text-muted-foreground text-sm",
+                "Waiting for topics\u{2026}"
             }
         } else {
-            div { class: "grid grid-cols-[repeat(auto-fill,minmax(280px,1fr))] gap-6 mt-6",
+            div { class: "flex-1 overflow-y-auto",
                 for topic in topics() {
-                    TopicCard { topic }
+                    TopicRow { topic }
                 }
             }
         }
@@ -25,13 +35,13 @@ pub fn TopicList() -> Element {
 }
 
 #[component]
-fn TopicCard(topic: Topic) -> Element {
+fn TopicRow(topic: Topic) -> Element {
     let mut state = use_context::<AppState>();
     let name = topic.name.clone();
 
     rsx! {
         div {
-            class: "bg-stone-700 border border-stone-600 rounded-lg p-6 cursor-pointer transition-all duration-200 hover:border-gold hover:-translate-y-0.5 hover:shadow-[0_4px_12px_rgba(201,168,76,0.15)]",
+            class: "flex items-center justify-between px-6 py-3 border-b border-border cursor-pointer hover:bg-surface-hover transition-colors",
             onclick: move |_| {
                 let client = state.client();
                 let name = name.clone();
@@ -41,10 +51,11 @@ fn TopicCard(topic: Topic) -> Element {
                     }
                 });
             },
-            h3 { class: "font-medieval text-gold text-xl mb-3", "{topic.name}" }
-            div { class: "text-parchment-dim text-sm flex gap-4",
-                span { "Partitions: {topic.partitions}" }
-                span { "RF: {topic.replication_factor}" }
+            span { class: "text-sm font-medium", "{topic.name}" }
+            div { class: "flex items-center gap-3 text-xs text-muted-foreground",
+                span { "{topic.partitions} partitions" }
+                span { class: "text-border-hover", "\u{00b7}" }
+                span { "RF {topic.replication_factor}" }
             }
         }
     }

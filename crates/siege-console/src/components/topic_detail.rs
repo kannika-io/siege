@@ -10,46 +10,59 @@ pub fn TopicDetailPanel(detail: TopicDetail) -> Element {
 
     rsx! {
         div {
-            class: "fixed inset-0 bg-black/60 z-40",
+            class: "fixed inset-0 bg-black/40 z-40",
             onclick: move |_| state.selected_topic.set(None),
         }
         div {
-            class: "fixed top-0 right-0 w-[480px] h-screen bg-stone-800 border-l-2 border-gold p-8 overflow-y-auto z-50 shadow-[-4px_0_12px_rgba(0,0,0,0.3)]",
-            button {
-                class: "absolute top-4 right-4 bg-transparent border-none text-parchment-dim text-2xl cursor-pointer hover:text-parchment",
-                onclick: move |_| state.selected_topic.set(None),
-                "x"
+            class: "fixed top-0 right-0 w-[480px] h-screen bg-surface border-l border-border overflow-y-auto z-50",
+
+            div { class: "flex items-center justify-between px-6 py-4 border-b border-border",
+                h2 { class: "text-sm font-semibold truncate", "{detail.name}" }
+                button {
+                    class: "text-muted-foreground hover:text-foreground text-lg leading-none cursor-pointer",
+                    onclick: move |_| state.selected_topic.set(None),
+                    "\u{00d7}"
+                }
             }
-            h2 { class: "font-medieval text-gold text-2xl mb-6", "{detail.name}" }
-            div { class: "text-parchment-dim text-sm",
-                span { "Partitions: {detail.partitions}" }
-                span { " | RF: {detail.replication_factor}" }
+
+            div { class: "px-6 py-4 flex gap-3 text-xs border-b border-border",
+                span { class: "text-muted-foreground bg-muted px-2 py-0.5 rounded",
+                    "{detail.partitions} partitions"
+                }
+                span { class: "text-muted-foreground bg-muted px-2 py-0.5 rounded",
+                    "RF {detail.replication_factor}"
+                }
             }
 
             if !detail.config.is_empty() {
-                p { class: "font-medieval text-gold text-lg mt-6 mb-2", "Configuration" }
-                table { class: "w-full border-collapse my-4",
-                    thead {
-                        tr {
-                            th { class: "text-left p-2 border-b border-stone-600 text-gold font-medieval text-sm", "Key" }
-                            th { class: "text-left p-2 border-b border-stone-600 text-gold font-medieval text-sm", "Value" }
-                        }
+                div { class: "px-6 py-4",
+                    h3 { class: "text-xs font-semibold text-muted-foreground uppercase tracking-wider mb-3",
+                        "Configuration"
                     }
-                    tbody {
-                        for (key, value) in &detail.config {
-                            tr {
-                                td { class: "text-left p-2 border-b border-stone-600 text-sm break-all", "{key}" }
-                                td { class: "text-left p-2 border-b border-stone-600 text-sm break-all", "{value}" }
+                    div { class: "border border-border rounded-lg overflow-hidden",
+                        table { class: "w-full text-sm",
+                            thead {
+                                tr { class: "bg-muted",
+                                    th { class: "text-left px-3 py-2 text-xs font-medium text-muted-foreground", "Key" }
+                                    th { class: "text-left px-3 py-2 text-xs font-medium text-muted-foreground", "Value" }
+                                }
+                            }
+                            tbody {
+                                for (key, value) in &detail.config {
+                                    tr { class: "border-t border-border",
+                                        td { class: "px-3 py-2 text-xs break-all", "{key}" }
+                                        td { class: "px-3 py-2 text-xs text-muted-foreground break-all", "{value}" }
+                                    }
+                                }
                             }
                         }
                     }
                 }
             }
 
-            div { class: "mt-6",
-                p { class: "font-medieval text-gold text-lg mb-2", "Actions" }
+            div { class: "px-6 py-4 border-t border-border",
                 button {
-                    class: "font-medieval px-6 py-2 rounded border border-blood bg-blood text-parchment cursor-pointer transition-all duration-200 hover:bg-blood-bright",
+                    class: "px-3 py-1.5 rounded-md text-sm font-medium bg-destructive text-destructive-foreground hover:bg-destructive-hover cursor-pointer transition-colors",
                     onclick: {
                         let name = name.clone();
                         move |_| {
@@ -62,7 +75,7 @@ pub fn TopicDetailPanel(detail: TopicDetail) -> Element {
                             });
                         }
                     },
-                    "Delete Topic"
+                    "Delete topic"
                 }
             }
         }
