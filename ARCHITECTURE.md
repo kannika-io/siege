@@ -3,12 +3,14 @@
 ```
 siege-kernel          (foundation — no internal deps)
     ↑
-siege-api-spec        (depends on kernel)
+siege                 (core domain)
     ↑
-├── siege-api         (depends on kernel + api-spec)
-├── siege-api-client  (depends on api-spec)
+siege-api-spec        (API contract)
+    ↑
+├── siege-api         (HTTP server)
+├── siege-api-client  (HTTP client)
 │       ↑
-└── siege-console     (depends on api-client + api-spec)
+└── siege-console     (frontend)
 ```
 
 ## siege-kernel
@@ -19,6 +21,12 @@ No utoipa, no request/response types.
 
 Examples: `KafkaProperties`, topic identifiers, configuration primitives.
 
+## siege
+
+Core domain library. Backend traits, domain events, context trait, and the high-level `Client` SDK.
+
+Contains: `KafkaBackend` trait, `EventEmitter` trait, `SiegeContext` trait, `DomainEvent` enum, `Topic`/`TopicDetail` domain models, `Client` with sub-clients (e.g. `Topics`).
+
 ## siege-api-spec
 
 API contract types and OpenAPI specification.
@@ -27,14 +35,12 @@ Has utoipa for `ToSchema` derives.
 
 Contains: `Topic`, `TopicDetail`, `CreateTopicRequest`, `TopicConfigUpdate`, `SiegeError`, `SseEvent`, `ApiDoc`.
 
-Re-exports `siege-kernel` types so downstream crates don't need a direct kernel dependency.
+Re-exports kernel types so downstream crates don't need a direct kernel dependency.
 
 ## siege-api
 
 HTTP server (actix-web).
 Routes, Kafka backend implementations, SSE broadcaster, cluster watcher.
-
-Depends on kernel (for value objects in backend code) and api-spec (for API types).
 
 ## siege-api-client
 
@@ -50,10 +56,11 @@ Never on `siege-kernel` directly.
 ## Rules
 
 - `siege-kernel` has zero internal crate dependencies.
-  It is the foundation.
-- `siege-api-spec` depends only on `siege-kernel`.
-  No other internal crates.
+- `siege` depends only on kernel.
+  Backend traits, domain events, and the client SDK live here.
+- `siege-api-spec` depends only on kernel.
 - The console never reaches into kernel — it gets types through api-client/api-spec.
 - utoipa/ToSchema lives in `siege-api-spec`, not in kernel.
 - Value objects go in kernel.
+  Domain traits and events go in `siege`.
   API request/response/error/event types go in api-spec.
