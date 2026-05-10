@@ -55,6 +55,7 @@ impl KafkaBackend for MockKafkaBackend {
         name: &str,
         partitions: i32,
         replication_factor: i32,
+        config: KafkaProperties,
     ) -> impl Future<Output = Result<(), SiegeError>> + Send {
         let name = name.to_owned();
         let result = {
@@ -68,7 +69,7 @@ impl KafkaBackend for MockKafkaBackend {
                         name,
                         partitions,
                         replication_factor,
-                        config: KafkaProperties::new(),
+                        config,
                     },
                 );
                 Ok(())
@@ -149,7 +150,7 @@ mod tests {
     #[tokio::test]
     async fn create_topic_success() {
         let backend = MockKafkaBackend::new();
-        backend.create_topic("new", 6, 3).await.unwrap();
+        backend.create_topic("new", 6, 3, KafkaProperties::new()).await.unwrap();
         let detail = backend.get_topic("new").await.unwrap();
         assert_eq!(detail.partitions, 6);
     }
@@ -157,7 +158,7 @@ mod tests {
     #[tokio::test]
     async fn create_topic_already_exists() {
         let backend = MockKafkaBackend::with_topics(vec![sample_detail("existing")]);
-        let err = backend.create_topic("existing", 1, 1).await.unwrap_err();
+        let err = backend.create_topic("existing", 1, 1, KafkaProperties::new()).await.unwrap_err();
         assert!(matches!(err, SiegeError::TopicAlreadyExists(_)));
     }
 

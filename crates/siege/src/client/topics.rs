@@ -26,10 +26,11 @@ impl<'a, C: SiegeContext> Topics<'a, C> {
         name: &str,
         partitions: i32,
         replication_factor: i32,
+        config: KafkaProperties,
     ) -> Result<TopicCreated, SiegeError> {
         self.ctx
             .kafka()
-            .create_topic(name, partitions, replication_factor)
+            .create_topic(name, partitions, replication_factor, config)
             .await?;
         let topic = Topic {
             name: name.to_owned(),

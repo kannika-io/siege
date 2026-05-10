@@ -1,8 +1,9 @@
 use std::collections::HashSet;
 use std::time::Duration;
 
-use siege_api_spec::{SseEvent, TopicResource};
 use siege::kafka::KafkaBackend;
+use siege::KafkaProperties;
+use siege_api_spec::{SseEvent, TopicResource};
 
 use super::broadcaster::Broadcaster;
 
@@ -69,7 +70,7 @@ mod tests {
 
         tokio::time::sleep(Duration::from_millis(100)).await;
 
-        backend.create_topic("new-topic", 1, 1).await.unwrap();
+        backend.create_topic("new-topic", 1, 1, KafkaProperties::new()).await.unwrap();
 
         let event = tokio::time::timeout(Duration::from_millis(200), rx.recv())
             .await

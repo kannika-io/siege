@@ -22,6 +22,8 @@ pub struct CreateTopicRequest {
     pub name: String,
     pub partitions: i32,
     pub replication_factor: i32,
+    #[serde(default)]
+    pub config: KafkaProperties,
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize, ToSchema)]

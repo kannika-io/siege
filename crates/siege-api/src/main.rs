@@ -2,12 +2,12 @@ mod error;
 mod kafka;
 mod mapping;
 mod routes;
+mod seed;
 mod sse;
 
 use actix_cors::Cors;
 use actix_web::{web, App, HttpServer};
 use clap::Parser;
-use siege::kafka::KafkaBackend;
 use siege::SiegeContext;
 use siege_api_spec::ApiDoc;
 use utoipa::OpenApi;
@@ -54,7 +54,7 @@ async fn main() -> std::io::Result<()> {
     let backend = RdKafkaBackend::new(&cli.bootstrap_servers);
 
     if cli.seed {
-        seed_topics(&backend).await;
+        seed::seed_topics(&backend).await;
     }
 
     let broadcaster = Broadcaster::new(256);
@@ -110,19 +110,4 @@ async fn main() -> std::io::Result<()> {
     server.run().await
 }
 
-async fn seed_topics(backend: &impl KafkaBackend) {
-    let seeds = [
-        ("kings-landing", 6, 1),
-        ("winterfell", 3, 1),
-        ("the-wall", 1, 1),
-        ("iron-islands", 3, 1),
-        ("dragonstone", 3, 1),
-    ];
 
-    for (name, partitions, rf) in seeds {
-        match backend.create_topic(name, partitions, rf).await {
-            Ok(()) => eprintln!("seeded topic: {name}"),
-            Err(e) => eprintln!("seed {name}: {e}"),
-        }
-    }
-}

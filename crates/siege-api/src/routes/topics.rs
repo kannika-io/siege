@@ -31,7 +31,7 @@ pub async fn create_topic<C: SiegeContext>(
     let req = body.into_inner();
     client
         .topics()
-        .create(&req.name, req.partitions, req.replication_factor)
+        .create(&req.name, req.partitions, req.replication_factor, req.config)
         .await?;
     Ok(HttpResponse::Created().finish())
 }
@@ -227,11 +227,11 @@ mod tests {
 
         let req = test::TestRequest::post()
             .uri("/api/topics")
-            .set_json(CreateTopicRequest {
-                name: "new-topic".into(),
-                partitions: 6,
-                replication_factor: 3,
-            })
+            .set_json(serde_json::json!({
+                "name": "new-topic",
+                "partitions": 6,
+                "replication_factor": 3
+            }))
             .to_request();
         let resp = test::call_service(&app, req).await;
         assert_eq!(resp.status(), StatusCode::CREATED);
@@ -252,11 +252,11 @@ mod tests {
 
         let req = test::TestRequest::post()
             .uri("/api/topics")
-            .set_json(CreateTopicRequest {
-                name: "exists".into(),
-                partitions: 1,
-                replication_factor: 1,
-            })
+            .set_json(serde_json::json!({
+                "name": "exists",
+                "partitions": 1,
+                "replication_factor": 1
+            }))
             .to_request();
         let resp = test::call_service(&app, req).await;
         assert_eq!(resp.status(), StatusCode::CONFLICT);

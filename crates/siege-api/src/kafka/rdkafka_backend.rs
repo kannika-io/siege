@@ -116,15 +116,19 @@ impl KafkaBackend for RdKafkaBackend {
         name: &str,
         partitions: i32,
         replication_factor: i32,
+        config: KafkaProperties,
     ) -> impl Future<Output = Result<(), SiegeError>> + Send {
         let admin = self.admin.clone();
         let name = name.to_owned();
         async move {
-            let new_topic = NewTopic::new(
+            let mut new_topic = NewTopic::new(
                 &name,
                 partitions,
                 TopicReplication::Fixed(replication_factor),
             );
+            for (key, value) in config.iter() {
+                new_topic = new_topic.set(key, value);
+            }
 
             let results = admin
                 .create_topics(&[new_topic], &AdminOptions::new())

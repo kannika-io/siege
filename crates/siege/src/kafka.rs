@@ -12,6 +12,7 @@ pub trait KafkaBackend: Send + Sync + 'static {
         name: &str,
         partitions: i32,
         replication_factor: i32,
+        config: KafkaProperties,
     ) -> impl Future<Output = Result<(), SiegeError>> + Send;
     fn delete_topic(&self, name: &str) -> impl Future<Output = Result<(), SiegeError>> + Send;
     fn update_topic_config(

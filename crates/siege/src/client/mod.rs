@@ -73,6 +73,7 @@ mod tests {
             name: &str,
             partitions: i32,
             replication_factor: i32,
+            config: KafkaProperties,
         ) -> impl Future<Output = Result<(), SiegeError>> + Send {
             let mut topics = self.topics.lock().unwrap();
             let result = if topics.iter().any(|t| t.name == name) {
@@ -82,7 +83,7 @@ mod tests {
                     name: name.to_owned(),
                     partitions,
                     replication_factor,
-                    config: KafkaProperties::new(),
+                    config,
                 });
                 Ok(())
             };
@@ -195,7 +196,7 @@ mod tests {
     #[tokio::test]
     async fn create_topic_emits_event() {
         let client = test_client(vec![]);
-        let created = client.topics().create("new", 6, 3).await.unwrap();
+        let created = client.topics().create("new", 6, 3, KafkaProperties::new()).await.unwrap();
         assert_eq!(created.topic.name, "new");
         assert_eq!(created.topic.partitions, 6);
 
