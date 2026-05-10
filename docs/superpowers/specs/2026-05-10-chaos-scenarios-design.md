@@ -112,22 +112,31 @@ OpenAPI annotations via `utoipa::ToSchema` on all types. Endpoints added to `Api
 
 ## API client (`siege-api-client`)
 
-New `Chaos` sub-client, accessed via `client.chaos()` — same pattern as the existing `client.topics()` in the `siege` SDK:
+New `Topic` handle returned by `client.topic("name")`. Holds client ref + topic name, no fetch. All per-topic operations (existing and chaos) live on it:
 
 ```rust
 impl SiegeClient {
-    pub fn chaos(&self) -> Chaos<'_>;
+    pub fn topic(&self, name: &str) -> Topic<'_>;
+    pub fn topics(&self) -> Topics<'_>;  // existing, for list()
 }
 
-pub struct Chaos<'a> { client: &'a SiegeClient }
+pub struct Topic<'a> {
+    client: &'a SiegeClient,
+    name: String,
+}
 
-impl Chaos<'_> {
-    pub async fn delete_topic(&self, topic: &str) -> Result<ChaosResult, ClientError>;
-    pub async fn zero_retention(&self, topic: &str) -> Result<ChaosResult, ClientError>;
-    pub async fn flip_cleanup_policy(&self, topic: &str) -> Result<ChaosResult, ClientError>;
-    pub async fn increase_partitions(&self, topic: &str, partitions: i32) -> Result<ChaosResult, ClientError>;
-    pub async fn poison_pills(&self, topic: &str, count: u32) -> Result<ChaosResult, ClientError>;
-    pub async fn schema_break(&self, topic: &str, count: u32) -> Result<ChaosResult, ClientError>;
+impl Topic<'_> {
+    // existing operations
+    pub async fn get(&self) -> Result<TopicDetailResource, ClientError>;
+    pub async fn delete(&self) -> Result<ChaosResult, ClientError>;
+    pub async fn update_config(&self, config: &TopicConfigUpdateRequest) -> Result<(), ClientError>;
+
+    // chaos operations
+    pub async fn zero_retention(&self) -> Result<ChaosResult, ClientError>;
+    pub async fn flip_cleanup_policy(&self) -> Result<ChaosResult, ClientError>;
+    pub async fn increase_partitions(&self, partitions: i32) -> Result<ChaosResult, ClientError>;
+    pub async fn poison_pills(&self, count: u32) -> Result<ChaosResult, ClientError>;
+    pub async fn schema_break(&self, count: u32) -> Result<ChaosResult, ClientError>;
 }
 ```
 
