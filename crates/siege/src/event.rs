@@ -1,9 +1,16 @@
-use std::any::Any;
+use crate::{Topic, TopicDeleted};
 
-pub trait DomainEvent: Any + Send + Sync {
-    fn event_name(&self) -> &'static str;
+pub enum DomainEvent {
+    TopicCreated { topic: Topic },
+    TopicDeleted { name: String },
+}
+
+impl From<TopicDeleted> for DomainEvent {
+    fn from(e: TopicDeleted) -> Self {
+        DomainEvent::TopicDeleted { name: e.name }
+    }
 }
 
 pub trait EventEmitter: Send + Sync + 'static {
-    fn emit(&self, event: &dyn DomainEvent);
+    fn emit(&self, event: &DomainEvent);
 }

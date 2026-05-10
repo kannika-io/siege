@@ -1,6 +1,6 @@
 use siege_kernel::KafkaProperties;
 
-use crate::event::EventEmitter;
+use crate::event::{DomainEvent, EventEmitter};
 use crate::kafka::KafkaBackend;
 use crate::{SiegeContext, SiegeError, Topic, TopicCreated, TopicDeleted, TopicDetail};
 
@@ -31,24 +31,24 @@ impl<'a, C: SiegeContext> Topics<'a, C> {
             .kafka()
             .create_topic(name, partitions, replication_factor)
             .await?;
-        let event = TopicCreated {
-            topic: Topic {
-                name: name.to_owned(),
-                partitions,
-                replication_factor,
-            },
+        let topic = Topic {
+            name: name.to_owned(),
+            partitions,
+            replication_factor,
         };
-        self.ctx.events().emit(&event);
-        Ok(event)
+        self.ctx
+            .events()
+            .emit(&DomainEvent::TopicCreated { topic: topic.clone() });
+        Ok(TopicCreated { topic })
     }
 
     pub async fn delete(&self, name: &str) -> Result<TopicDeleted, SiegeError> {
         self.ctx.kafka().delete_topic(name).await?;
-        let event = TopicDeleted {
-            name: name.to_owned(),
-        };
-        self.ctx.events().emit(&event);
-        Ok(event)
+        let name = name.to_owned();
+        self.ctx
+            .events()
+            .emit(&DomainEvent::TopicDeleted { name: name.clone() });
+        Ok(TopicDeleted { name })
     }
 
     pub async fn update_config(

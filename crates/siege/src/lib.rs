@@ -1,6 +1,6 @@
 mod context;
 mod error;
-mod event;
+pub mod event;
 mod topic;
 
 pub mod client;

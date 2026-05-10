@@ -24,8 +24,9 @@ mod tests {
 
     use crate::kafka::KafkaBackend;
     use crate::{
-        DomainEvent, EventEmitter, KafkaProperties, SiegeContext, SiegeError, Topic, TopicDetail,
+        EventEmitter, KafkaProperties, SiegeContext, SiegeError, Topic, TopicDetail,
     };
+    use crate::event::DomainEvent;
 
     use super::*;
 
@@ -126,8 +127,12 @@ mod tests {
     }
 
     impl EventEmitter for RecordingEmitter {
-        fn emit(&self, event: &dyn DomainEvent) {
-            self.events.lock().unwrap().push(event.event_name().to_owned());
+        fn emit(&self, event: &DomainEvent) {
+            let name = match event {
+                DomainEvent::TopicCreated { .. } => "topic_created",
+                DomainEvent::TopicDeleted { .. } => "topic_deleted",
+            };
+            self.events.lock().unwrap().push(name.to_owned());
         }
     }
 
