@@ -83,11 +83,11 @@ fn ConfigTable(config: KafkaProperties, mut show_all: Signal<bool>) -> Element {
                 "Configuration"
             }
             div { class: "border border-border rounded-lg overflow-hidden",
-                table { class: "w-full text-sm",
+                table { class: "w-full text-sm table-fixed",
                     thead {
                         tr { class: "bg-muted",
-                            th { class: "text-left px-3 py-2 text-xs font-medium text-muted-foreground", "Key" }
-                            th { class: "text-left px-3 py-2 text-xs font-medium text-muted-foreground", "Value" }
+                            th { class: "text-left px-3 py-2 text-xs font-medium text-muted-foreground w-1/2", "Key" }
+                            th { class: "text-left px-3 py-2 text-xs font-medium text-muted-foreground w-1/2", "Value" }
                         }
                     }
                     tbody {
