@@ -4,14 +4,15 @@ use wasm_bindgen::prelude::*;
 use wasm_bindgen::JsCast;
 use web_sys::EventSource;
 
-use crate::state::AppState;
+use crate::state::{AppState, TopicsState};
 
 pub fn use_sse_subscription() {
-    let state = use_context::<AppState>();
+    let app = use_context::<AppState>();
+    let topics_state = use_context::<TopicsState>();
 
     use_hook(|| {
-        let api_url = state.api_url;
-        let mut topics = state.topics;
+        let api_url = app.api_url;
+        let mut topics = topics_state.list;
 
         let url = format!("{api_url}/api/events");
         let es = EventSource::new(&url).expect("failed to connect SSE");

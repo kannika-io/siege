@@ -2,7 +2,7 @@ use dioxus::prelude::*;
 use siege_api_client::{ChaosExt, KafkaProperties, TopicDetailResource};
 
 use super::topic_pills::TopicPills;
-use crate::state::AppState;
+use crate::state::{AppState, TopicsState};
 
 const DEFAULT_HIGHLIGHTED_KEYS: &[&str] = &[
     "cleanup.policy",
@@ -14,7 +14,7 @@ const DEFAULT_HIGHLIGHTED_KEYS: &[&str] = &[
 
 #[component]
 pub fn TopicDetailPanel(detail: TopicDetailResource) -> Element {
-    let mut state = use_context::<AppState>();
+    let mut topics_state = use_context::<TopicsState>();
     let name = detail.name.clone();
     let feedback = use_signal(|| None::<String>);
     let show_all_config = use_signal(|| false);
@@ -25,7 +25,7 @@ pub fn TopicDetailPanel(detail: TopicDetailResource) -> Element {
                 h2 { class: "text-sm font-semibold truncate", "{detail.name}" }
                 button {
                     class: "text-muted-foreground hover:text-foreground text-lg leading-none cursor-pointer",
-                    onclick: move |_| state.selected_topic.set(None),
+                    onclick: move |_| topics_state.selected.set(None),
                     "\u{00d7}"
                 }
             }
@@ -151,7 +151,8 @@ fn ChaosButton(
     name: String,
     feedback: Signal<Option<String>>,
 ) -> Element {
-    let mut state = use_context::<AppState>();
+    let state = use_context::<AppState>();
+    let mut topics_state = use_context::<TopicsState>();
     let btn_class = if destructive {
         "px-3 py-1.5 rounded-md text-xs font-medium bg-destructive text-destructive-foreground hover:bg-destructive-hover cursor-pointer transition-colors"
     } else {
@@ -174,7 +175,7 @@ fn ChaosButton(
                             "Delete topic" => {
                                 match topic.delete().await {
                                     Ok(()) => {
-                                        state.selected_topic.set(None);
+                                        topics_state.selected.set(None);
                                         Ok("Topic deleted".to_string())
                                     }
                                     Err(e) => Err(e.to_string()),

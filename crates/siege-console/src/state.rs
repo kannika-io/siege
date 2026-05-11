@@ -37,8 +37,6 @@ impl Theme {
 
 #[derive(Clone, Copy)]
 pub struct AppState {
-    pub topics: Signal<Vec<TopicResource>>,
-    pub selected_topic: Signal<Option<TopicDetailResource>>,
     pub theme: Signal<Theme>,
     pub api_url: &'static str,
 }
@@ -47,4 +45,10 @@ impl AppState {
     pub fn client(&self) -> SiegeClient {
         SiegeClient::new(self.api_url)
     }
+}
+
+#[derive(Clone, Copy)]
+pub struct TopicsState {
+    pub list: Signal<Vec<TopicResource>>,
+    pub selected: Signal<Option<TopicDetailResource>>,
 }

@@ -2,12 +2,12 @@ use dioxus::prelude::*;
 use siege_api_client::TopicResource;
 
 use super::topic_pills::TopicPills;
-use crate::state::AppState;
+use crate::state::{AppState, TopicsState};
 
 #[component]
 pub fn TopicList() -> Element {
-    let state = use_context::<AppState>();
-    let topics = state.topics;
+    let topics_state = use_context::<TopicsState>();
+    let topics = topics_state.list;
 
     rsx! {
         div { class: "flex items-center justify-between px-6 py-4 border-b border-border",
@@ -37,18 +37,19 @@ pub fn TopicList() -> Element {
 
 #[component]
 fn TopicRow(topic: TopicResource) -> Element {
-    let mut state = use_context::<AppState>();
+    let app = use_context::<AppState>();
+    let mut topics_state = use_context::<TopicsState>();
     let name = topic.name.clone();
 
     rsx! {
         div {
             class: "flex items-center justify-between px-6 py-3 border-b border-border cursor-pointer hover:bg-surface-hover transition-colors",
             onclick: move |_| {
-                let client = state.client();
+                let client = app.client();
                 let name = name.clone();
                 spawn(async move {
                     if let Ok(detail) = client.get_topic(&name).await {
-                        state.selected_topic.set(Some(detail));
+                        topics_state.selected.set(Some(detail));
                     }
                 });
             },
