@@ -35,18 +35,18 @@ pub fn TopicDetailPanel(detail: TopicDetailResource) -> Element {
                     TopicPills { partitions: detail.partitions, replication_factor: detail.replication_factor, config: detail.config.clone() }
                 }
 
-                div { class: "px-6 py-4 border-b border-border",
+                div { class: "@container px-6 py-4 border-b border-border",
                     h3 { class: "text-xs font-semibold text-muted-foreground uppercase tracking-wider mb-3",
                         "Chaos"
                     }
 
-                    div { class: "flex flex-col gap-2",
-                        ChaosRow { action: ChaosAction::Delete, name: name.clone() }
-                        ChaosRow { action: ChaosAction::ZeroRetention, name: name.clone() }
-                        ChaosRow { action: ChaosAction::FlipCleanupPolicy, name: name.clone() }
-                        ChaosRow { action: ChaosAction::IncreasePartitions, name: name.clone() }
-                        ChaosRow { action: ChaosAction::PoisonPills(10), name: name.clone() }
-                        ChaosRow { action: ChaosAction::SchemaBreak(10), name: name.clone() }
+                    div { class: "flex flex-wrap gap-2",
+                        ChaosButton { action: ChaosAction::Delete, name: name.clone() }
+                        ChaosButton { action: ChaosAction::ZeroRetention, name: name.clone() }
+                        ChaosButton { action: ChaosAction::FlipCleanupPolicy, name: name.clone() }
+                        ChaosButton { action: ChaosAction::IncreasePartitions, name: name.clone() }
+                        ChaosButton { action: ChaosAction::PoisonPills, name: name.clone() }
+                        ChaosButton { action: ChaosAction::SchemaBreak, name: name.clone() }
                     }
                 }
 
@@ -114,8 +114,8 @@ enum ChaosAction {
     ZeroRetention,
     FlipCleanupPolicy,
     IncreasePartitions,
-    PoisonPills(i64),
-    SchemaBreak(i64),
+    PoisonPills,
+    SchemaBreak,
 }
 
 impl ChaosAction {
@@ -125,24 +125,13 @@ impl ChaosAction {
             Self::ZeroRetention => "Zero retention",
             Self::FlipCleanupPolicy => "Flip cleanup policy",
             Self::IncreasePartitions => "Add partition",
-            Self::PoisonPills(_) => "Poison pills",
-            Self::SchemaBreak(_) => "Schema break",
+            Self::PoisonPills => "Poison pills",
+            Self::SchemaBreak => "Schema break",
         }
     }
 
     fn is_destructive(&self) -> bool {
         matches!(self, Self::Delete)
-    }
-
-    fn has_input(&self) -> bool {
-        matches!(self, Self::PoisonPills(_) | Self::SchemaBreak(_))
-    }
-
-    fn default_value(&self) -> i64 {
-        match self {
-            Self::PoisonPills(v) | Self::SchemaBreak(v) => *v,
-            _ => 0,
-        }
     }
 
     fn success_message(&self, name: &str) -> String {
@@ -151,77 +140,63 @@ impl ChaosAction {
             Self::ZeroRetention => format!("Set retention to zero for '{name}'"),
             Self::FlipCleanupPolicy => format!("Flipped cleanup policy for '{name}'"),
             Self::IncreasePartitions => format!("Increased partitions for '{name}'"),
-            Self::PoisonPills(n) => format!("Sent {n} poison pills to '{name}'"),
-            Self::SchemaBreak(n) => format!("Sent {n} schema-breaking messages to '{name}'"),
+            Self::PoisonPills => format!("Sent 10 poison pills to '{name}'"),
+            Self::SchemaBreak => format!("Sent 10 schema-breaking messages to '{name}'"),
         }
     }
 
-    async fn execute(&self, topic: &siege_api_client::Topic<'_>, value: i64) -> Result<(), String> {
+    async fn execute(&self, topic: &siege_api_client::Topic<'_>) -> Result<(), String> {
         match self {
             Self::Delete => topic.delete().await.map_err(|e| e.to_string()),
             Self::ZeroRetention => topic.zero_retention().await.map(|_| ()).map_err(|e| e.to_string()),
             Self::FlipCleanupPolicy => topic.flip_cleanup_policy().await.map(|_| ()).map_err(|e| e.to_string()),
             Self::IncreasePartitions => topic.increase_partitions(1).await.map(|_| ()).map_err(|e| e.to_string()),
-            Self::PoisonPills(_) => topic.poison_pills(value as u32).await.map(|_| ()).map_err(|e| e.to_string()),
-            Self::SchemaBreak(_) => topic.schema_break(value as u32).await.map(|_| ()).map_err(|e| e.to_string()),
+            Self::PoisonPills => topic.poison_pills(10).await.map(|_| ()).map_err(|e| e.to_string()),
+            Self::SchemaBreak => topic.schema_break(10).await.map(|_| ()).map_err(|e| e.to_string()),
         }
     }
 }
 
 #[component]
-fn ChaosRow(action: ChaosAction, name: String) -> Element {
+fn ChaosButton(action: ChaosAction, name: String) -> Element {
     let state = use_context::<AppState>();
     let mut topics_state = use_context::<TopicsState>();
     let mut toaster = use_context::<Toaster>();
-    let default_value = action.default_value();
-    let mut input_value = use_signal(move || default_value.to_string());
 
     let btn_class = if action.is_destructive() {
-        "px-3 py-1.5 rounded-md text-xs font-medium bg-destructive text-destructive-foreground hover:bg-destructive-hover cursor-pointer transition-colors"
+        "size-20 rounded-lg text-xs font-medium bg-destructive text-destructive-foreground hover:bg-destructive-hover cursor-pointer transition-colors flex items-center justify-center text-center p-2"
     } else {
-        "px-3 py-1.5 rounded-md text-xs font-medium bg-amber-600 text-white hover:bg-amber-700 cursor-pointer transition-colors"
+        "size-20 rounded-lg text-xs font-medium bg-amber-600 text-white hover:bg-amber-700 cursor-pointer transition-colors flex items-center justify-center text-center p-2"
     };
 
-    let has_input = action.has_input();
     let label = action.label();
 
     rsx! {
-        div { class: "flex items-center gap-2",
-            button {
-                class: btn_class,
-                onclick: {
+        button {
+            class: btn_class,
+            onclick: {
+                let name = name.clone();
+                let action = action.clone();
+                move |_| {
+                    let client = state.client();
                     let name = name.clone();
                     let action = action.clone();
-                    move |_| {
-                        let client = state.client();
-                        let name = name.clone();
-                        let action = action.clone();
-                        let value = input_value().parse::<i64>().unwrap_or(action.default_value());
-                        let msg = action.success_message(&name);
-                        spawn(async move {
-                            let topic = client.topic(&name);
-                            match action.execute(&topic, value).await {
-                                Ok(()) => {
-                                    if matches!(action, ChaosAction::Delete) {
-                                        topics_state.selected.set(None);
-                                    }
-                                    toaster.success(msg);
+                    let msg = action.success_message(&name);
+                    spawn(async move {
+                        let topic = client.topic(&name);
+                        match action.execute(&topic).await {
+                            Ok(()) => {
+                                if matches!(action, ChaosAction::Delete) {
+                                    topics_state.selected.set(None);
                                 }
-                                Err(e) => toaster.error(e),
+                                toaster.success(msg);
                             }
-                        });
-                    }
-                },
-                "{label}"
-            }
-            if has_input {
-                input {
-                    r#type: "number",
-                    class: "w-20 px-2 py-1.5 rounded-md text-xs border border-border bg-background text-foreground",
-                    value: "{input_value}",
-                    oninput: move |e| input_value.set(e.value()),
+                            Err(e) => toaster.error(e),
+                        }
+                    });
                 }
-            }
+            },
+            "{label}"
         }
     }
 }
