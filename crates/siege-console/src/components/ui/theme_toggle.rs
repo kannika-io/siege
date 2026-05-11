@@ -19,7 +19,9 @@ pub fn ThemeToggle() -> Element {
             class: "self-start w-8 h-8 flex items-center justify-center rounded-full text-sidebar-foreground hover:bg-subtle hover:text-sidebar-active cursor-pointer transition-colors",
             title: "{theme.label()}",
             onclick: move |_| {
-                state.theme.set(theme.next());
+                let next = theme.next();
+                next.save();
+                state.theme.set(next);
             },
             Icon { name: icon_name }
         }

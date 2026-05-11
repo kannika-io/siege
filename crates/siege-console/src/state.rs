@@ -9,7 +9,34 @@ pub enum Theme {
     System,
 }
 
+const STORAGE_KEY: &str = "siege-theme";
+
 impl Theme {
+    pub fn load() -> Self {
+        web_sys::window()
+            .and_then(|w| w.local_storage().ok().flatten())
+            .and_then(|s| s.get_item(STORAGE_KEY).ok().flatten())
+            .map(|v| match v.as_str() {
+                "light" => Theme::Light,
+                "dark" => Theme::Dark,
+                _ => Theme::System,
+            })
+            .unwrap_or(Theme::Dark)
+    }
+
+    pub fn save(self) {
+        let value = match self {
+            Theme::Light => "light",
+            Theme::Dark => "dark",
+            Theme::System => "system",
+        };
+        if let Some(storage) = web_sys::window()
+            .and_then(|w| w.local_storage().ok().flatten())
+        {
+            let _ = storage.set_item(STORAGE_KEY, value);
+        }
+    }
+
     pub fn next(self) -> Self {
         match self {
             Theme::Light => Theme::Dark,

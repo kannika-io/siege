@@ -16,7 +16,7 @@ fn main() {
 }
 
 fn App() -> Element {
-    let theme = use_signal(|| Theme::Dark);
+    let theme = use_signal(Theme::load);
 
     use_context_provider(|| AppState {
         theme,

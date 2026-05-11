@@ -58,5 +58,5 @@ utoipa-swagger-ui = { version = "9", features = ["actix-web"] }
 dioxus = { version = "=0.7.5", features = ["web", "router"] }
 
 # WASM
-web-sys = { version = "0.3", features = ["EventSource", "MessageEvent"] }
+web-sys = { version = "0.3", features = ["EventSource", "MessageEvent", "Storage", "Window"] }
 wasm-bindgen = "0.2"
