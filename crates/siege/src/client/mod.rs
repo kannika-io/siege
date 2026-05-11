@@ -20,107 +20,14 @@ impl<C: SiegeContext> Client<C> {
 
 #[cfg(test)]
 mod tests {
-    use std::sync::{Arc, Mutex};
+    use std::sync::Mutex;
 
-    use crate::kafka::KafkaBackend;
     use crate::{
-        EventEmitter, KafkaProperties, SiegeContext, SiegeError, Topic, TopicDetail,
+        EventEmitter, KafkaProperties, MockKafkaBackend, SiegeContext, SiegeError, TopicDetail,
     };
     use crate::event::DomainEvent;
 
     use super::*;
-
-    #[derive(Clone, Default)]
-    struct FakeKafka {
-        topics: Arc<Mutex<Vec<TopicDetail>>>,
-    }
-
-    impl KafkaBackend for FakeKafka {
-        fn list_topics(
-            &self,
-        ) -> impl Future<Output = Result<Vec<Topic>, SiegeError>> + Send {
-            let topics = self
-                .topics
-                .lock()
-                .unwrap()
-                .iter()
-                .map(|d| Topic {
-                    name: d.name.clone(),
-                    partitions: d.partitions,
-                    replication_factor: d.replication_factor,
-                })
-                .collect();
-            async move { Ok(topics) }
-        }
-
-        fn get_topic(
-            &self,
-            name: &str,
-        ) -> impl Future<Output = Result<TopicDetail, SiegeError>> + Send {
-            let result = self
-                .topics
-                .lock()
-                .unwrap()
-                .iter()
-                .find(|t| t.name == name)
-                .cloned()
-                .ok_or_else(|| SiegeError::TopicNotFound(name.to_owned()));
-            async move { result }
-        }
-
-        fn create_topic(
-            &self,
-            name: &str,
-            partitions: i32,
-            replication_factor: i32,
-            config: KafkaProperties,
-        ) -> impl Future<Output = Result<(), SiegeError>> + Send {
-            let mut topics = self.topics.lock().unwrap();
-            let result = if topics.iter().any(|t| t.name == name) {
-                Err(SiegeError::TopicAlreadyExists(name.to_owned()))
-            } else {
-                topics.push(TopicDetail {
-                    name: name.to_owned(),
-                    partitions,
-                    replication_factor,
-                    config,
-                });
-                Ok(())
-            };
-            async move { result }
-        }
-
-        fn delete_topic(
-            &self,
-            name: &str,
-        ) -> impl Future<Output = Result<(), SiegeError>> + Send {
-            let mut topics = self.topics.lock().unwrap();
-            let len = topics.len();
-            topics.retain(|t| t.name != name);
-            let result = if topics.len() < len {
-                Ok(())
-            } else {
-                Err(SiegeError::TopicNotFound(name.to_owned()))
-            };
-            async move { result }
-        }
-
-        fn update_topic_config(
-            &self,
-            name: &str,
-            config: KafkaProperties,
-        ) -> impl Future<Output = Result<(), SiegeError>> + Send {
-            let mut topics = self.topics.lock().unwrap();
-            let result = match topics.iter_mut().find(|t| t.name == name) {
-                Some(t) => {
-                    t.config.extend(config);
-                    Ok(())
-                }
-                None => Err(SiegeError::TopicNotFound(name.to_owned())),
-            };
-            async move { result }
-        }
-    }
 
     #[derive(Default)]
     struct RecordingEmitter {
@@ -138,15 +45,15 @@ mod tests {
     }
 
     struct TestCtx {
-        kafka: FakeKafka,
+        kafka: MockKafkaBackend,
         events: RecordingEmitter,
     }
 
     impl SiegeContext for TestCtx {
-        type Kafka = FakeKafka;
+        type Kafka = MockKafkaBackend;
         type Events = RecordingEmitter;
 
-        fn kafka(&self) -> &FakeKafka {
+        fn kafka(&self) -> &MockKafkaBackend {
             &self.kafka
         }
         fn events(&self) -> &RecordingEmitter {
@@ -156,9 +63,7 @@ mod tests {
 
     fn test_client(topics: Vec<TopicDetail>) -> Client<TestCtx> {
         Client::new(TestCtx {
-            kafka: FakeKafka {
-                topics: Arc::new(Mutex::new(topics)),
-            },
+            kafka: MockKafkaBackend::with_topics(topics),
             events: RecordingEmitter::default(),
         })
     }

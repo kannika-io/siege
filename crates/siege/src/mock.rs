@@ -1,9 +1,8 @@
 use std::collections::HashMap;
 use std::sync::{Arc, Mutex};
 
-use siege::kafka::KafkaBackend;
-use siege::{SiegeError, Topic, TopicDetail};
-use siege::KafkaProperties;
+use crate::kafka::KafkaBackend;
+use crate::{KafkaProperties, SiegeError, Topic, TopicDetail};
 
 #[derive(Clone, Default)]
 pub struct MockKafkaBackend {
@@ -39,7 +38,10 @@ impl KafkaBackend for MockKafkaBackend {
         async move { Ok(topics) }
     }
 
-    fn get_topic(&self, name: &str) -> impl Future<Output = Result<TopicDetail, SiegeError>> + Send {
+    fn get_topic(
+        &self,
+        name: &str,
+    ) -> impl Future<Output = Result<TopicDetail, SiegeError>> + Send {
         let result = self
             .topics
             .lock()
@@ -150,7 +152,10 @@ mod tests {
     #[tokio::test]
     async fn create_topic_success() {
         let backend = MockKafkaBackend::new();
-        backend.create_topic("new", 6, 3, KafkaProperties::new()).await.unwrap();
+        backend
+            .create_topic("new", 6, 3, KafkaProperties::new())
+            .await
+            .unwrap();
         let detail = backend.get_topic("new").await.unwrap();
         assert_eq!(detail.partitions, 6);
     }
@@ -158,7 +163,10 @@ mod tests {
     #[tokio::test]
     async fn create_topic_already_exists() {
         let backend = MockKafkaBackend::with_topics(vec![sample_detail("existing")]);
-        let err = backend.create_topic("existing", 1, 1, KafkaProperties::new()).await.unwrap_err();
+        let err = backend
+            .create_topic("existing", 1, 1, KafkaProperties::new())
+            .await
+            .unwrap_err();
         assert!(matches!(err, SiegeError::TopicAlreadyExists(_)));
     }
 
