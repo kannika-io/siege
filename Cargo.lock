@@ -3494,6 +3494,7 @@ name = "siege-console"
 version = "0.1.0"
 dependencies = [
  "dioxus",
+ "js-sys",
  "serde",
  "serde_json",
  "siege-api-client",

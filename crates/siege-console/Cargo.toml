@@ -6,6 +6,7 @@ edition.workspace = true
 [dependencies]
 siege-api-client.workspace = true
 dioxus.workspace = true
+js-sys = "0.3"
 serde.workspace = true
 serde_json.workspace = true
 web-sys.workspace = true

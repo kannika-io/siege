@@ -1,9 +1,9 @@
 use dioxus::prelude::*;
-use siege_api_client::{ChaosExt, KafkaProperties, TopicDetailResource};
+use siege_api_client::{KafkaProperties, TopicDetailResource};
 
 use super::topic_pills::TopicPills;
+use crate::chaos_action::ChaosAction;
 use crate::components::ui::chaos_button::ChaosButton;
-use crate::components::ui::icon::IconName;
 use crate::components::ui::toast::Toaster;
 use crate::state::{AppState, TopicsState};
 
@@ -134,71 +134,3 @@ fn ConfigTable(config: KafkaProperties, mut show_all: Signal<bool>) -> Element {
     }
 }
 
-#[derive(Clone, Copy, PartialEq)]
-enum ChaosAction {
-    Delete,
-    ZeroRetention,
-    FlipCleanupPolicy,
-    IncreasePartitions,
-    PoisonPills,
-    SchemaBreak,
-}
-
-impl ChaosAction {
-    const ALL: &[Self] = &[
-        Self::Delete,
-        Self::ZeroRetention,
-        Self::FlipCleanupPolicy,
-        Self::IncreasePartitions,
-        Self::PoisonPills,
-        Self::SchemaBreak,
-    ];
-
-    fn label(self) -> &'static str {
-        match self {
-            Self::Delete => "Delete",
-            Self::ZeroRetention => "Zero retention",
-            Self::FlipCleanupPolicy => "Flip cleanup",
-            Self::IncreasePartitions => "Add partition",
-            Self::PoisonPills => "Poison pills",
-            Self::SchemaBreak => "Schema break",
-        }
-    }
-
-    fn icon(self) -> IconName {
-        match self {
-            Self::Delete => IconName::Skull,
-            Self::ZeroRetention => IconName::Hourglass,
-            Self::FlipCleanupPolicy => IconName::Swords,
-            Self::IncreasePartitions => IconName::Shield,
-            Self::PoisonPills => IconName::Flask,
-            Self::SchemaBreak => IconName::Zap,
-        }
-    }
-
-    fn is_destructive(self) -> bool {
-        matches!(self, Self::Delete)
-    }
-
-    fn success_message(self, name: &str) -> String {
-        match self {
-            Self::Delete => format!("Deleted topic '{name}'"),
-            Self::ZeroRetention => format!("Set retention to zero for '{name}'"),
-            Self::FlipCleanupPolicy => format!("Flipped cleanup policy for '{name}'"),
-            Self::IncreasePartitions => format!("Increased partitions for '{name}'"),
-            Self::PoisonPills => format!("Sent 10 poison pills to '{name}'"),
-            Self::SchemaBreak => format!("Sent 10 schema-breaking messages to '{name}'"),
-        }
-    }
-
-    async fn execute(self, topic: &siege_api_client::Topic<'_>) -> Result<(), String> {
-        match self {
-            Self::Delete => topic.delete().await.map_err(|e| e.to_string()),
-            Self::ZeroRetention => topic.zero_retention().await.map(|_| ()).map_err(|e| e.to_string()),
-            Self::FlipCleanupPolicy => topic.flip_cleanup_policy().await.map(|_| ()).map_err(|e| e.to_string()),
-            Self::IncreasePartitions => topic.increase_partitions(1).await.map(|_| ()).map_err(|e| e.to_string()),
-            Self::PoisonPills => topic.poison_pills(10).await.map(|_| ()).map_err(|e| e.to_string()),
-            Self::SchemaBreak => topic.schema_break(10).await.map(|_| ()).map_err(|e| e.to_string()),
-        }
-    }
-}

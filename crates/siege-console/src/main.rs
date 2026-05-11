@@ -1,13 +1,15 @@
+mod app;
+mod chaos_action;
 mod components;
 mod layouts;
 mod pages;
+mod routes;
 mod sse;
 mod state;
 
 use components::ui::toast::{ToastContainer, Toaster};
-use layouts::default::Layout;
-use pages::topics::TopicsPage;
 use dioxus::prelude::*;
+use routes::Route;
 use state::{AppState, Theme};
 
 const API_URL: &str = "http://localhost:8080";
@@ -26,9 +28,7 @@ fn App() -> Element {
     use_context_provider(Toaster::new);
 
     rsx! {
-        Layout {
-            TopicsPage {}
-        }
+        Router::<Route> {}
         ToastContainer {}
     }
 }

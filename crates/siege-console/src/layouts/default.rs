@@ -1,10 +1,11 @@
 use dioxus::prelude::*;
 
 use crate::components::ui::theme_toggle::ThemeToggle;
+use crate::routes::Route;
 use crate::state::AppState;
 
 #[component]
-pub fn Layout(children: Element) -> Element {
+pub fn Layout() -> Element {
     let state = use_context::<AppState>();
     let theme = (state.theme)();
     let theme_class = theme.css_class();
@@ -30,19 +31,34 @@ pub fn Layout(children: Element) -> Element {
                         span { class: "text-foreground font-semibold text-sm tracking-tight", "Siege" }
                     }
 
-                    div { class: "flex-1",
-                        div { class: "flex items-center px-3 py-1.5 rounded-md text-sm font-medium bg-subtle text-sidebar-active",
-                            "Topics"
-                        }
+                    div { class: "flex-1 flex flex-col gap-0.5",
+                        NavItem { to: Route::TopicsPage {}, label: "Topics" }
+                        NavItem { to: Route::WheelOfChaosPage {}, label: "Wheel of Chaos" }
                     }
 
                     ThemeToggle {}
                 }
 
                 div { class: "flex-1 bg-surface rounded-xl overflow-hidden flex flex-col border border-border",
-                    {children}
+                    Outlet::<Route> {}
                 }
             }
         }
+    }
+}
+
+#[component]
+fn NavItem(to: Route, label: &'static str) -> Element {
+    let current_route: Route = use_route();
+    let is_active = current_route == to;
+
+    let class = if is_active {
+        "flex items-center px-3 py-1.5 rounded-md text-sm font-medium bg-subtle text-sidebar-active"
+    } else {
+        "flex items-center px-3 py-1.5 rounded-md text-sm font-medium text-muted-foreground hover:text-foreground hover:bg-subtle/50 transition-colors"
+    };
+
+    rsx! {
+        Link { to: to, class: class, "{label}" }
     }
 }
