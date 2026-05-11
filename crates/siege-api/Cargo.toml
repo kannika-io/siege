@@ -6,6 +6,7 @@ edition.workspace = true
 [dependencies]
 siege.workspace = true
 siege-api-spec.workspace = true
+siege-kafka.workspace = true
 actix-web.workspace = true
 actix-cors.workspace = true
 rdkafka.workspace = true

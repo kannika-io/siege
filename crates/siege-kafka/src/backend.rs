@@ -26,6 +26,10 @@ impl RdKafkaBackend {
             admin: Arc::new(admin),
         }
     }
+
+    pub fn admin(&self) -> &AdminClient<DefaultClientContext> {
+        &self.admin
+    }
 }
 
 impl KafkaBackend for RdKafkaBackend {

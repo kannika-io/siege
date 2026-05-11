@@ -13,7 +13,7 @@ use siege_api_spec::ApiDoc;
 use utoipa::OpenApi;
 use utoipa_swagger_ui::SwaggerUi;
 
-use kafka::rdkafka_backend::RdKafkaBackend;
+use siege_kafka::RdKafkaBackend;
 use sse::broadcaster::Broadcaster;
 
 struct Siege {
