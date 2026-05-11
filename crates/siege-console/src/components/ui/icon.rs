@@ -8,6 +8,12 @@ pub enum IconName {
     Layers,
     Copy,
     Compress,
+    Skull,
+    Hourglass,
+    Swords,
+    Shield,
+    Flask,
+    Zap,
 }
 
 impl IconName {
@@ -36,6 +42,34 @@ impl IconName {
             IconName::Compress => rsx! {
                 path { d: "M4 14l5-5M4 14h5v-5" }
                 path { d: "M20 10l-5 5M20 10h-5v5" }
+            },
+            IconName::Skull => rsx! {
+                path { d: "M12 2a8 8 0 0 0-8 8c0 3 2 5.5 4 7v5h8v-5c2-1.5 4-4 4-7a8 8 0 0 0-8-8z" }
+                path { d: "M9 10h.01M15 10h.01" }
+                path { d: "M8 17h8" }
+            },
+            IconName::Hourglass => rsx! {
+                path { d: "M5 2h14M5 22h14" }
+                path { d: "M7 2v5l5 5-5 5v5" }
+                path { d: "M17 2v5l-5 5 5 5v5" }
+            },
+            IconName::Swords => rsx! {
+                path { d: "M14.5 17.5 3 6V3h3l11.5 11.5" }
+                path { d: "M13 19l6-6M16 16l4 4M19 21l2-2" }
+                path { d: "M14.5 6.5 18 3h3v3l-3.5 3.5" }
+                path { d: "M5 14l4 4M7 17l-3 3M3 19l2 2" }
+            },
+            IconName::Shield => rsx! {
+                path { d: "M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z" }
+                path { d: "M12 8v8M8 12h8" }
+            },
+            IconName::Flask => rsx! {
+                path { d: "M9 3h6" }
+                path { d: "M10 3v5.2L5 16a2 2 0 0 0 1.7 3h10.6a2 2 0 0 0 1.7-3l-5-7.8V3" }
+                path { d: "M6 15h12" }
+            },
+            IconName::Zap => rsx! {
+                path { d: "M13 2 3 14h9l-1 8 10-12h-9z" }
             },
         }
     }

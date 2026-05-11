@@ -2,6 +2,8 @@ use dioxus::prelude::*;
 use siege_api_client::{ChaosExt, KafkaProperties, TopicDetailResource};
 
 use super::topic_pills::TopicPills;
+use crate::components::ui::chaos_button::ChaosButton;
+use crate::components::ui::icon::IconName;
 use crate::components::ui::toast::Toaster;
 use crate::state::{AppState, TopicsState};
 
@@ -15,7 +17,9 @@ const DEFAULT_HIGHLIGHTED_KEYS: &[&str] = &[
 
 #[component]
 pub fn TopicDetailPanel(detail: TopicDetailResource) -> Element {
+    let state = use_context::<AppState>();
     let mut topics_state = use_context::<TopicsState>();
+    let mut toaster = use_context::<Toaster>();
     let name = detail.name.clone();
     let show_all_config = use_signal(|| false);
 
@@ -35,18 +39,40 @@ pub fn TopicDetailPanel(detail: TopicDetailResource) -> Element {
                     TopicPills { partitions: detail.partitions, replication_factor: detail.replication_factor, config: detail.config.clone() }
                 }
 
-                div { class: "@container px-6 py-4 border-b border-border",
+                div { class: "px-6 py-4 border-b border-border",
                     h3 { class: "text-xs font-semibold text-muted-foreground uppercase tracking-wider mb-3",
                         "Chaos"
                     }
 
-                    div { class: "flex flex-wrap gap-2",
-                        ChaosButton { action: ChaosAction::Delete, name: name.clone() }
-                        ChaosButton { action: ChaosAction::ZeroRetention, name: name.clone() }
-                        ChaosButton { action: ChaosAction::FlipCleanupPolicy, name: name.clone() }
-                        ChaosButton { action: ChaosAction::IncreasePartitions, name: name.clone() }
-                        ChaosButton { action: ChaosAction::PoisonPills, name: name.clone() }
-                        ChaosButton { action: ChaosAction::SchemaBreak, name: name.clone() }
+                    div { class: "flex flex-wrap gap-3",
+                        for &action in ChaosAction::ALL {
+                            ChaosButton {
+                                key: "{action.label()}",
+                                label: action.label(),
+                                icon: action.icon(),
+                                destructive: action.is_destructive(),
+                                onclick: {
+                                    let name = name.clone();
+                                    move |_| {
+                                        let client = state.client();
+                                        let name = name.clone();
+                                        let msg = action.success_message(&name);
+                                        spawn(async move {
+                                            let topic = client.topic(&name);
+                                            match action.execute(&topic).await {
+                                                Ok(()) => {
+                                                    if action.is_destructive() {
+                                                        topics_state.selected.set(None);
+                                                    }
+                                                    toaster.success(msg);
+                                                }
+                                                Err(e) => toaster.error(e),
+                                            }
+                                        });
+                                    }
+                                },
+                            }
+                        }
                     }
                 }
 
@@ -108,7 +134,7 @@ fn ConfigTable(config: KafkaProperties, mut show_all: Signal<bool>) -> Element {
     }
 }
 
-#[derive(Clone, PartialEq)]
+#[derive(Clone, Copy, PartialEq)]
 enum ChaosAction {
     Delete,
     ZeroRetention,
@@ -119,22 +145,42 @@ enum ChaosAction {
 }
 
 impl ChaosAction {
-    fn label(&self) -> &'static str {
+    const ALL: &[Self] = &[
+        Self::Delete,
+        Self::ZeroRetention,
+        Self::FlipCleanupPolicy,
+        Self::IncreasePartitions,
+        Self::PoisonPills,
+        Self::SchemaBreak,
+    ];
+
+    fn label(self) -> &'static str {
         match self {
-            Self::Delete => "Delete topic",
+            Self::Delete => "Delete",
             Self::ZeroRetention => "Zero retention",
-            Self::FlipCleanupPolicy => "Flip cleanup policy",
+            Self::FlipCleanupPolicy => "Flip cleanup",
             Self::IncreasePartitions => "Add partition",
             Self::PoisonPills => "Poison pills",
             Self::SchemaBreak => "Schema break",
         }
     }
 
-    fn is_destructive(&self) -> bool {
+    fn icon(self) -> IconName {
+        match self {
+            Self::Delete => IconName::Skull,
+            Self::ZeroRetention => IconName::Hourglass,
+            Self::FlipCleanupPolicy => IconName::Swords,
+            Self::IncreasePartitions => IconName::Shield,
+            Self::PoisonPills => IconName::Flask,
+            Self::SchemaBreak => IconName::Zap,
+        }
+    }
+
+    fn is_destructive(self) -> bool {
         matches!(self, Self::Delete)
     }
 
-    fn success_message(&self, name: &str) -> String {
+    fn success_message(self, name: &str) -> String {
         match self {
             Self::Delete => format!("Deleted topic '{name}'"),
             Self::ZeroRetention => format!("Set retention to zero for '{name}'"),
@@ -145,7 +191,7 @@ impl ChaosAction {
         }
     }
 
-    async fn execute(&self, topic: &siege_api_client::Topic<'_>) -> Result<(), String> {
+    async fn execute(self, topic: &siege_api_client::Topic<'_>) -> Result<(), String> {
         match self {
             Self::Delete => topic.delete().await.map_err(|e| e.to_string()),
             Self::ZeroRetention => topic.zero_retention().await.map(|_| ()).map_err(|e| e.to_string()),
@@ -153,50 +199,6 @@ impl ChaosAction {
             Self::IncreasePartitions => topic.increase_partitions(1).await.map(|_| ()).map_err(|e| e.to_string()),
             Self::PoisonPills => topic.poison_pills(10).await.map(|_| ()).map_err(|e| e.to_string()),
             Self::SchemaBreak => topic.schema_break(10).await.map(|_| ()).map_err(|e| e.to_string()),
-        }
-    }
-}
-
-#[component]
-fn ChaosButton(action: ChaosAction, name: String) -> Element {
-    let state = use_context::<AppState>();
-    let mut topics_state = use_context::<TopicsState>();
-    let mut toaster = use_context::<Toaster>();
-
-    let btn_class = if action.is_destructive() {
-        "size-20 rounded-lg text-xs font-medium bg-destructive text-destructive-foreground hover:bg-destructive-hover cursor-pointer transition-colors flex items-center justify-center text-center p-2"
-    } else {
-        "size-20 rounded-lg text-xs font-medium bg-amber-600 text-white hover:bg-amber-700 cursor-pointer transition-colors flex items-center justify-center text-center p-2"
-    };
-
-    let label = action.label();
-
-    rsx! {
-        button {
-            class: btn_class,
-            onclick: {
-                let name = name.clone();
-                let action = action.clone();
-                move |_| {
-                    let client = state.client();
-                    let name = name.clone();
-                    let action = action.clone();
-                    let msg = action.success_message(&name);
-                    spawn(async move {
-                        let topic = client.topic(&name);
-                        match action.execute(&topic).await {
-                            Ok(()) => {
-                                if matches!(action, ChaosAction::Delete) {
-                                    topics_state.selected.set(None);
-                                }
-                                toaster.success(msg);
-                            }
-                            Err(e) => toaster.error(e),
-                        }
-                    });
-                }
-            },
-            "{label}"
         }
     }
 }
