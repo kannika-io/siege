@@ -112,7 +112,9 @@ OpenAPI annotations via `utoipa::ToSchema` on all types. Endpoints added to `Api
 
 ## API client (`siege-api-client`)
 
-New `Topic` handle returned by `client.topic("name")`. Holds client ref + topic name, no fetch. All per-topic operations (existing and chaos) live on it:
+New `Topic` handle returned by `client.topic("name")`. Holds client ref + topic name, no fetch. Base topic operations live on `Topic` directly; chaos operations are added via a `ChaosExt` extension trait.
+
+Methods return domain types (e.g. `TopicDetail`), not resource types. Conversion to `TopicDetailResource` etc. happens at the API response layer.
 
 ```rust
 impl SiegeClient {
@@ -126,18 +128,20 @@ pub struct Topic<'a> {
 }
 
 impl Topic<'_> {
-    // existing operations
-    pub async fn get(&self) -> Result<TopicDetailResource, ClientError>;
-    pub async fn delete(&self) -> Result<ChaosResult, ClientError>;
+    pub async fn get(&self) -> Result<TopicDetail, ClientError>;
+    pub async fn delete(&self) -> Result<(), ClientError>;
     pub async fn update_config(&self, config: &TopicConfigUpdateRequest) -> Result<(), ClientError>;
-
-    // chaos operations
-    pub async fn zero_retention(&self) -> Result<ChaosResult, ClientError>;
-    pub async fn flip_cleanup_policy(&self) -> Result<ChaosResult, ClientError>;
-    pub async fn increase_partitions(&self, partitions: i32) -> Result<ChaosResult, ClientError>;
-    pub async fn poison_pills(&self, count: u32) -> Result<ChaosResult, ClientError>;
-    pub async fn schema_break(&self, count: u32) -> Result<ChaosResult, ClientError>;
 }
+
+pub trait ChaosExt {
+    async fn zero_retention(&self) -> Result<ChaosResult, ChaosError>;
+    async fn flip_cleanup_policy(&self) -> Result<ChaosResult, ChaosError>;
+    async fn increase_partitions(&self, partitions: i32) -> Result<ChaosResult, ChaosError>;
+    async fn poison_pills(&self, count: u32) -> Result<ChaosResult, ChaosError>;
+    async fn schema_break(&self, count: u32) -> Result<ChaosResult, ChaosError>;
+}
+
+impl ChaosExt for Topic<'_> { ... }
 ```
 
 ## Console UI
