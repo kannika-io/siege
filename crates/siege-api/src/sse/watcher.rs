@@ -2,7 +2,6 @@ use std::collections::HashSet;
 use std::time::Duration;
 
 use siege::kafka::KafkaBackend;
-use siege::KafkaProperties;
 use siege_api_spec::{SseEvent, TopicResource};
 
 use super::broadcaster::Broadcaster;
@@ -50,11 +49,11 @@ pub async fn watch_cluster<K: KafkaBackend>(
 
 #[cfg(test)]
 mod tests {
-    use siege::TopicDetail;
+    use siege::kafka::TopicDetail;
     use siege::KafkaProperties;
+    use siege::MockKafkaBackend;
 
     use super::*;
-    use siege::MockKafkaBackend;
 
     #[tokio::test]
     async fn watcher_detects_new_topic() {

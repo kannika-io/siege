@@ -23,9 +23,10 @@ mod tests {
     use std::sync::Mutex;
 
     use crate::{
-        EventEmitter, KafkaProperties, MockKafkaBackend, SiegeContext, SiegeError, TopicDetail,
+        EventEmitter, KafkaProperties, MockKafkaBackend, SiegeContext, SiegeError,
     };
     use crate::event::DomainEvent;
+    use crate::kafka::TopicDetail;
 
     use super::*;
 
@@ -37,8 +38,8 @@ mod tests {
     impl EventEmitter for RecordingEmitter {
         fn emit(&self, event: &DomainEvent) {
             let name = match event {
-                DomainEvent::TopicCreated { .. } => "topic_created",
-                DomainEvent::TopicDeleted { .. } => "topic_deleted",
+                DomainEvent::TopicCreated(_) => "topic_created",
+                DomainEvent::TopicDeleted(_) => "topic_deleted",
             };
             self.events.lock().unwrap().push(name.to_owned());
         }
@@ -87,8 +88,8 @@ mod tests {
     #[tokio::test]
     async fn get_topic() {
         let client = test_client(vec![sample("my-topic")]);
-        let detail = client.topics().get("my-topic").await.unwrap();
-        assert_eq!(detail.name, "my-topic");
+        let topic = client.topics().get("my-topic").await.unwrap();
+        assert_eq!(topic.name, "my-topic");
     }
 
     #[tokio::test]
@@ -101,9 +102,13 @@ mod tests {
     #[tokio::test]
     async fn create_topic_emits_event() {
         let client = test_client(vec![]);
-        let created = client.topics().create("new", 6, 3, KafkaProperties::new()).await.unwrap();
-        assert_eq!(created.topic.name, "new");
-        assert_eq!(created.topic.partitions, 6);
+        let topic = client
+            .topics()
+            .create("new", 6, 3, KafkaProperties::new())
+            .await
+            .unwrap();
+        assert_eq!(topic.name, "new");
+        assert_eq!(topic.partitions, 6);
 
         let events = client.ctx.events.events.lock().unwrap();
         assert_eq!(events.as_slice(), &["topic_created"]);
@@ -112,20 +117,34 @@ mod tests {
     #[tokio::test]
     async fn delete_topic_emits_event() {
         let client = test_client(vec![sample("doomed")]);
-        let deleted = client.topics().delete("doomed").await.unwrap();
-        assert_eq!(deleted.name, "doomed");
+        client.topics().delete("doomed").await.unwrap();
 
         let events = client.ctx.events.events.lock().unwrap();
         assert_eq!(events.as_slice(), &["topic_deleted"]);
     }
 
     #[tokio::test]
-    async fn update_config() {
+    async fn get_then_delete() {
+        let client = test_client(vec![sample("doomed")]);
+        let topic = client.topics().get("doomed").await.unwrap();
+        topic.delete().await.unwrap();
+
+        let events = client.ctx.events.events.lock().unwrap();
+        assert_eq!(events.as_slice(), &["topic_deleted"]);
+    }
+
+    #[tokio::test]
+    async fn topic_config() {
         let client = test_client(vec![sample("t")]);
         let config: KafkaProperties =
             std::collections::HashMap::from([("retention.ms".into(), "1000".into())]).into();
-        client.topics().update_config("t", config).await.unwrap();
-        let detail = client.topics().get("t").await.unwrap();
-        assert_eq!(detail.config.get("retention.ms").unwrap(), "1000");
+        client
+            .topics()
+            .update_config("t", config)
+            .await
+            .unwrap();
+        let topic = client.topics().get("t").await.unwrap();
+        let config = topic.config().await.unwrap();
+        assert_eq!(config.get("retention.ms").unwrap(), "1000");
     }
 }

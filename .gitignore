@@ -9,3 +9,4 @@ node_modules/
 
 # Dioxus
 dist/
+crates/siege-console/assets/tailwind.css

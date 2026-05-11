@@ -7,9 +7,8 @@ use rdkafka::admin::{
 };
 use rdkafka::client::DefaultClientContext;
 use rdkafka::config::ClientConfig;
-use siege::kafka::KafkaBackend;
-use siege::{SiegeError, Topic, TopicDetail};
-use siege::KafkaProperties;
+use siege::kafka::{KafkaBackend, TopicDetail, TopicMeta};
+use siege::{KafkaProperties, SiegeError};
 
 #[derive(Clone)]
 pub struct RdKafkaBackend {
@@ -33,7 +32,7 @@ impl RdKafkaBackend {
 }
 
 impl KafkaBackend for RdKafkaBackend {
-    fn list_topics(&self) -> impl Future<Output = Result<Vec<Topic>, SiegeError>> + Send {
+    fn list_topics(&self) -> impl Future<Output = Result<Vec<TopicMeta>, SiegeError>> + Send {
         let admin = self.admin.clone();
         async move {
             let metadata = admin
@@ -45,7 +44,7 @@ impl KafkaBackend for RdKafkaBackend {
                 .topics()
                 .iter()
                 .filter(|t| !t.name().starts_with("__"))
-                .map(|t| Topic {
+                .map(|t| TopicMeta {
                     name: t.name().to_owned(),
                     partitions: t.partitions().len() as i32,
                     replication_factor: t

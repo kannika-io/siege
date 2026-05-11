@@ -1,4 +1,4 @@
-use actix_web::{web, HttpResponse};
+use actix_web::{HttpResponse, web};
 use futures::StreamExt;
 use siege::SiegeContext;
 use siege_api_spec::{CreateTopicRequest, SseEvent, TopicConfigUpdateRequest, TopicResource};
@@ -11,7 +11,7 @@ pub async fn list_topics<C: SiegeContext>(
     client: web::Data<siege::client::Client<C>>,
 ) -> Result<HttpResponse, HttpError> {
     let topics = client.topics().list().await?;
-    let resources: Vec<TopicResource> = topics.into_iter().map(mapping::topic_to_resource).collect();
+    let resources: Vec<TopicResource> = topics.iter().map(mapping::topic_to_resource).collect();
     Ok(HttpResponse::Ok().json(resources))
 }
 
@@ -20,8 +20,9 @@ pub async fn get_topic<C: SiegeContext>(
     path: web::Path<String>,
 ) -> Result<HttpResponse, HttpError> {
     let name = path.into_inner();
-    let detail = client.topics().get(&name).await?;
-    Ok(HttpResponse::Ok().json(mapping::detail_to_resource(detail)))
+    let topic = client.topics().get(&name).await?;
+    let config = topic.config().await?;
+    Ok(HttpResponse::Ok().json(mapping::topic_to_detail_resource(&topic, config)))
 }
 
 pub async fn create_topic<C: SiegeContext>(
@@ -31,7 +32,12 @@ pub async fn create_topic<C: SiegeContext>(
     let req = body.into_inner();
     client
         .topics()
-        .create(&req.name, req.partitions, req.replication_factor, req.config)
+        .create(
+            &req.name,
+            req.partitions,
+            req.replication_factor,
+            req.config,
+        )
         .await?;
     Ok(HttpResponse::Created().finish())
 }
@@ -63,8 +69,7 @@ pub async fn events<C: SiegeContext>(
     broadcaster: web::Data<Broadcaster>,
 ) -> HttpResponse {
     let topics = client.topics().list().await.unwrap_or_default();
-    let resources: Vec<TopicResource> =
-        topics.into_iter().map(mapping::topic_to_resource).collect();
+    let resources: Vec<TopicResource> = topics.iter().map(mapping::topic_to_resource).collect();
     let rx = broadcaster.subscribe();
 
     let snapshot_data =
@@ -98,7 +103,8 @@ mod tests {
 
     use actix_web::http::StatusCode;
     use actix_web::{test, App};
-    use siege::{KafkaProperties, SiegeContext, TopicDetail};
+    use siege::{KafkaProperties, SiegeContext};
+    use siege::kafka::TopicDetail;
 
     use siege::MockKafkaBackend;
     use crate::routes::configure;
