@@ -7,6 +7,7 @@ members = [
     "crates/siege-api",
     "crates/siege-api-client",
     "crates/siege-console",
+    "crates/siege-kafka",
 ]
 
 [workspace.package]
@@ -19,6 +20,7 @@ siege-kernel = { path = "crates/siege-kernel" }
 siege = { path = "crates/siege" }
 siege-api-spec = { path = "crates/siege-api-spec" }
 siege-api-client = { path = "crates/siege-api-client" }
+siege-kafka = { path = "crates/siege-kafka" }
 
 # Serialization
 serde = { version = "1", features = ["derive"] }

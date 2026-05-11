@@ -1,0 +1,9 @@
+[package]
+name = "siege-kafka"
+version.workspace = true
+edition.workspace = true
+
+[dependencies]
+siege.workspace = true
+rdkafka.workspace = true
+tokio.workspace = true

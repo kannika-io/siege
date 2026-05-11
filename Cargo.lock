@@ -3445,6 +3445,7 @@ dependencies = [
  "serde_json",
  "siege",
  "siege-api-spec",
+ "siege-kafka",
  "tokio",
  "tokio-stream",
  "utoipa",
@@ -3483,6 +3484,15 @@ dependencies = [
  "siege-api-client",
  "wasm-bindgen",
  "web-sys",
+]
+
+[[package]]
+name = "siege-kafka"
+version = "0.1.0"
+dependencies = [
+ "rdkafka",
+ "siege",
+ "tokio",
 ]
 
 [[package]]
