@@ -1,7 +1,12 @@
+pub mod chaos;
+pub mod topic;
+
+pub use chaos::{ChaosError, ChaosExt};
 pub use siege_api_spec::{
-    CreateTopicRequest, KafkaProperties, SseEvent, TopicConfigUpdateRequest, TopicDetailResource,
-    TopicResource,
+    ChaosResult, CreateTopicRequest, KafkaProperties, SseEvent, TopicConfigUpdateRequest,
+    TopicDetailResource, TopicResource,
 };
+pub use topic::Topic;
 use thiserror::Error;
 
 #[derive(Debug, Error)]
@@ -26,10 +31,25 @@ impl SiegeClient {
         }
     }
 
-    async fn api_error(resp: reqwest::Response) -> ClientError {
+    pub(crate) fn http(&self) -> &reqwest::Client {
+        &self.client
+    }
+
+    pub(crate) fn base_url(&self) -> &str {
+        &self.base_url
+    }
+
+    pub(crate) async fn api_error(resp: reqwest::Response) -> ClientError {
         let status = resp.status().as_u16();
         let body = resp.text().await.unwrap_or_default();
         ClientError::Api { status, body }
+    }
+
+    pub fn topic(&self, name: &str) -> Topic<'_> {
+        Topic {
+            client: self,
+            name: name.to_owned(),
+        }
     }
 
     pub async fn list_topics(&self) -> Result<Vec<TopicResource>, ClientError> {
@@ -46,16 +66,7 @@ impl SiegeClient {
     }
 
     pub async fn get_topic(&self, name: &str) -> Result<TopicDetailResource, ClientError> {
-        let resp = self
-            .client
-            .get(format!("{}/api/topics/{name}", self.base_url))
-            .send()
-            .await?;
-        if resp.status().is_success() {
-            Ok(resp.json().await?)
-        } else {
-            Err(Self::api_error(resp).await)
-        }
+        self.topic(name).get().await
     }
 
     pub async fn create_topic(&self, req: &CreateTopicRequest) -> Result<(), ClientError> {
@@ -73,16 +84,7 @@ impl SiegeClient {
     }
 
     pub async fn delete_topic(&self, name: &str) -> Result<(), ClientError> {
-        let resp = self
-            .client
-            .delete(format!("{}/api/topics/{name}", self.base_url))
-            .send()
-            .await?;
-        if resp.status().is_success() {
-            Ok(())
-        } else {
-            Err(Self::api_error(resp).await)
-        }
+        self.topic(name).delete().await
     }
 
     pub async fn update_topic_config(
@@ -90,17 +92,7 @@ impl SiegeClient {
         name: &str,
         config: &TopicConfigUpdateRequest,
     ) -> Result<(), ClientError> {
-        let resp = self
-            .client
-            .post(format!("{}/api/topics/{name}/config", self.base_url))
-            .json(config)
-            .send()
-            .await?;
-        if resp.status().is_success() {
-            Ok(())
-        } else {
-            Err(Self::api_error(resp).await)
-        }
+        self.topic(name).update_config(config).await
     }
 }
 
@@ -118,5 +110,12 @@ mod tests {
     fn client_strips_trailing_slash() {
         let client = SiegeClient::new("http://localhost:8080/");
         assert_eq!(client.base_url, "http://localhost:8080");
+    }
+
+    #[test]
+    fn topic_handle_holds_name() {
+        let client = SiegeClient::new("http://localhost:8080");
+        let topic = client.topic("my-topic");
+        assert_eq!(topic.name, "my-topic");
     }
 }
