@@ -13,6 +13,7 @@ use siege_api_spec::ApiDoc;
 use utoipa::OpenApi;
 use utoipa_swagger_ui::SwaggerUi;
 
+use siege_chaos::ChaosClient;
 use siege_kafka::RdKafkaBackend;
 use sse::broadcaster::Broadcaster;
 
@@ -52,6 +53,7 @@ async fn main() -> std::io::Result<()> {
     let cli = Cli::parse();
 
     let backend = RdKafkaBackend::new(&cli.bootstrap_servers);
+    let chaos_client = web::Data::new(ChaosClient::new(&cli.bootstrap_servers));
 
     if cli.seed {
         seed::seed_topics(&backend).await;
@@ -84,6 +86,7 @@ async fn main() -> std::io::Result<()> {
             .wrap(Cors::permissive())
             .app_data(client.clone())
             .app_data(broadcaster_data.clone())
+            .app_data(chaos_client.clone())
             .configure(routes::configure::<Siege>)
             .service(
                 SwaggerUi::new("/swagger-ui/{_:.*}")
