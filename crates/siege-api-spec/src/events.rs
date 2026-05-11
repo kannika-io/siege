@@ -8,5 +8,6 @@ use crate::TopicResource;
 pub enum SseEvent {
     TopicsSnapshot { topics: Vec<TopicResource> },
     TopicCreated { topic: TopicResource },
+    TopicUpdated { topic: TopicResource },
     TopicDeleted { name: String },
 }

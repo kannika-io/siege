@@ -13,6 +13,7 @@ pub fn use_sse_subscription() {
     use_hook(|| {
         let api_url = app.api_url;
         let mut topics = topics_state.list;
+        let mut selected = topics_state.selected;
 
         let url = format!("{api_url}/api/events");
         let es = EventSource::new(&url).expect("failed to connect SSE");
@@ -31,8 +32,19 @@ pub fn use_sse_subscription() {
                 SseEvent::TopicCreated { topic } => {
                     topics.write().push(topic);
                 }
+                SseEvent::TopicUpdated { topic } => {
+                    if let Some(t) = topics.write().iter_mut().find(|t| t.name == topic.name) {
+                        *t = topic.clone();
+                    }
+                    if selected.read().as_ref().is_some_and(|s| s.name == topic.name) {
+                        selected.set(Some(topic.into()));
+                    }
+                }
                 SseEvent::TopicDeleted { name } => {
                     topics.write().retain(|t| t.name != name);
+                    if selected.read().as_ref().is_some_and(|s| s.name == name) {
+                        selected.set(None);
+                    }
                 }
             }
         }) as Box<dyn FnMut(_)>);

@@ -1,4 +1,4 @@
-use std::collections::HashSet;
+use std::collections::HashMap;
 use std::time::Duration;
 
 use siege::kafka::KafkaBackend;
@@ -6,12 +6,21 @@ use siege_api_spec::{SseEvent, TopicResource};
 
 use super::broadcaster::Broadcaster;
 
+fn to_resource(t: &siege::kafka::TopicMeta) -> TopicResource {
+    TopicResource {
+        name: t.name.clone(),
+        partitions: t.partitions,
+        replication_factor: t.replication_factor,
+        config: t.config.clone(),
+    }
+}
+
 pub async fn watch_cluster<K: KafkaBackend>(
     backend: &K,
     broadcaster: &Broadcaster,
     interval: Duration,
 ) {
-    let mut known_names: HashSet<String> = HashSet::new();
+    let mut known: HashMap<String, TopicResource> = HashMap::new();
     let mut ticker = tokio::time::interval(interval);
 
     loop {
@@ -21,35 +30,43 @@ pub async fn watch_cluster<K: KafkaBackend>(
             continue;
         };
 
-        let current_names: HashSet<String> = topics.iter().map(|t| t.name.clone()).collect();
+        let current: HashMap<String, TopicResource> = topics
+            .iter()
+            .map(|t| (t.name.clone(), to_resource(t)))
+            .collect();
 
-        for topic in &topics {
-            if !known_names.contains(&topic.name) {
-                broadcaster.send(SseEvent::TopicCreated {
-                    topic: TopicResource {
-                        name: topic.name.clone(),
-                        partitions: topic.partitions,
-                        replication_factor: topic.replication_factor,
-                        config: topic.config.clone(),
-                    },
-                });
+        for (name, resource) in &current {
+            match known.get(name) {
+                None => {
+                    broadcaster.send(SseEvent::TopicCreated {
+                        topic: resource.clone(),
+                    });
+                }
+                Some(prev) if prev != resource => {
+                    broadcaster.send(SseEvent::TopicUpdated {
+                        topic: resource.clone(),
+                    });
+                }
+                _ => {}
             }
         }
 
-        for name in &known_names {
-            if !current_names.contains(name) {
+        for name in known.keys() {
+            if !current.contains_key(name) {
                 broadcaster.send(SseEvent::TopicDeleted {
                     name: name.clone(),
                 });
             }
         }
 
-        known_names = current_names;
+        known = current;
     }
 }
 
 #[cfg(test)]
 mod tests {
+    use std::collections::HashMap as StdHashMap;
+
     use siege::kafka::TopicDetail;
     use siege::KafkaProperties;
     use siege::MockKafkaBackend;
@@ -113,6 +130,43 @@ mod tests {
             .unwrap();
 
         assert!(matches!(event, SseEvent::TopicDeleted { name } if name == "doomed"));
+
+        handle.abort();
+    }
+
+    #[tokio::test]
+    async fn watcher_detects_config_change() {
+        let backend = MockKafkaBackend::with_topics(vec![TopicDetail {
+            name: "t".into(),
+            partitions: 1,
+            replication_factor: 1,
+            config: KafkaProperties::new(),
+        }]);
+        let broadcaster = Broadcaster::new(16);
+        let mut rx = broadcaster.subscribe();
+
+        let bc = broadcaster.clone();
+        let b = backend.clone();
+        let handle = tokio::spawn(async move {
+            watch_cluster(&b, &bc, Duration::from_millis(50)).await;
+        });
+
+        let event = tokio::time::timeout(Duration::from_millis(200), rx.recv())
+            .await
+            .unwrap()
+            .unwrap();
+        assert!(matches!(event, SseEvent::TopicCreated { .. }));
+
+        let config: KafkaProperties =
+            StdHashMap::from([("cleanup.policy".into(), "compact".into())]).into();
+        backend.update_topic_config("t", config).await.unwrap();
+
+        let event = tokio::time::timeout(Duration::from_millis(200), rx.recv())
+            .await
+            .unwrap()
+            .unwrap();
+
+        assert!(matches!(event, SseEvent::TopicUpdated { topic } if topic.config.is_compacted()));
 
         handle.abort();
     }

@@ -19,6 +19,17 @@ pub struct TopicDetailResource {
     pub config: KafkaProperties,
 }
 
+impl From<TopicResource> for TopicDetailResource {
+    fn from(r: TopicResource) -> Self {
+        Self {
+            name: r.name,
+            partitions: r.partitions,
+            replication_factor: r.replication_factor,
+            config: r.config,
+        }
+    }
+}
+
 #[derive(Debug, Clone, Serialize, Deserialize, ToSchema)]
 pub struct CreateTopicRequest {
     pub name: String,
