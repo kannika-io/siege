@@ -35,9 +35,15 @@ fn App() -> Element {
 
     rsx! {
         Layout {
-            TopicList {}
-            if let Some(detail) = selected {
-                TopicDetailPanel { detail }
+            div { class: "flex flex-1 overflow-hidden",
+                div { class: if selected.is_some() { "w-1/2 flex flex-col overflow-hidden" } else { "flex-1 flex flex-col overflow-hidden" },
+                    TopicList {}
+                }
+                if let Some(ref detail) = selected {
+                    div { class: "w-1/2 border-l border-border overflow-y-auto",
+                        TopicDetailPanel { detail: detail.clone() }
+                    }
+                }
             }
         }
     }
