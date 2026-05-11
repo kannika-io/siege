@@ -40,6 +40,7 @@ fn TopicRow(topic: TopicResource) -> Element {
     let app = use_context::<AppState>();
     let mut topics_state = use_context::<TopicsState>();
     let name = topic.name.clone();
+    let is_selected = topics_state.selected.read().as_ref().is_some_and(|s| s.name == topic.name);
 
     rsx! {
         div {
@@ -53,8 +54,10 @@ fn TopicRow(topic: TopicResource) -> Element {
                     }
                 });
             },
-            span { class: "text-sm font-medium", "{topic.name}" }
-            TopicPills { partitions: topic.partitions, replication_factor: topic.replication_factor, config: topic.config.clone() }
+            span { class: if is_selected { "text-sm font-medium text-destructive truncate" } else { "text-sm font-medium truncate" }, "{topic.name}" }
+            div { class: "shrink-0",
+                TopicPills { partitions: topic.partitions, replication_factor: topic.replication_factor, config: topic.config.clone() }
+            }
         }
     }
 }

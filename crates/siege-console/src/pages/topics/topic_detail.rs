@@ -51,42 +51,12 @@ pub fn TopicDetailPanel(detail: TopicDetailResource) -> Element {
                     }
 
                     div { class: "flex flex-col gap-2",
-                        ChaosButton {
-                            label: "Delete topic",
-                            destructive: true,
-                            name: name.clone(),
-                            feedback: feedback,
-                        }
-                        ChaosButton {
-                            label: "Zero retention",
-                            destructive: false,
-                            name: name.clone(),
-                            feedback: feedback,
-                        }
-                        ChaosButton {
-                            label: "Flip cleanup policy",
-                            destructive: false,
-                            name: name.clone(),
-                            feedback: feedback,
-                        }
-                        ChaosNumberInput {
-                            label: "Increase partitions",
-                            name: name.clone(),
-                            feedback: feedback,
-                            default_value: 100,
-                        }
-                        ChaosNumberInput {
-                            label: "Poison pills",
-                            name: name.clone(),
-                            feedback: feedback,
-                            default_value: 10,
-                        }
-                        ChaosNumberInput {
-                            label: "Schema break",
-                            name: name.clone(),
-                            feedback: feedback,
-                            default_value: 10,
-                        }
+                        ChaosRow { action: ChaosAction::Delete, name: name.clone(), feedback }
+                        ChaosRow { action: ChaosAction::ZeroRetention, name: name.clone(), feedback }
+                        ChaosRow { action: ChaosAction::FlipCleanupPolicy, name: name.clone(), feedback }
+                        ChaosRow { action: ChaosAction::IncreasePartitions(100), name: name.clone(), feedback }
+                        ChaosRow { action: ChaosAction::PoisonPills(10), name: name.clone(), feedback }
+                        ChaosRow { action: ChaosAction::SchemaBreak(10), name: name.clone(), feedback }
                     }
                 }
             }
@@ -144,116 +114,93 @@ fn ConfigTable(config: KafkaProperties, mut show_all: Signal<bool>) -> Element {
     }
 }
 
-#[component]
-fn ChaosButton(
-    label: &'static str,
-    destructive: bool,
-    name: String,
-    feedback: Signal<Option<String>>,
-) -> Element {
-    let state = use_context::<AppState>();
-    let mut topics_state = use_context::<TopicsState>();
-    let btn_class = if destructive {
-        "px-3 py-1.5 rounded-md text-xs font-medium bg-destructive text-destructive-foreground hover:bg-destructive-hover cursor-pointer transition-colors"
-    } else {
-        "px-3 py-1.5 rounded-md text-xs font-medium bg-amber-600 text-white hover:bg-amber-700 cursor-pointer transition-colors"
-    };
+#[derive(Clone, PartialEq)]
+enum ChaosAction {
+    Delete,
+    ZeroRetention,
+    FlipCleanupPolicy,
+    IncreasePartitions(i64),
+    PoisonPills(i64),
+    SchemaBreak(i64),
+}
 
-    rsx! {
-        button {
-            class: btn_class,
-            onclick: {
-                let name = name.clone();
-                let label = label;
-                move |_| {
-                    let client = state.client();
-                    let name = name.clone();
-                    let mut feedback = feedback;
-                    spawn(async move {
-                        let topic = client.topic(&name);
-                        let result = match label {
-                            "Delete topic" => {
-                                match topic.delete().await {
-                                    Ok(()) => {
-                                        topics_state.selected.set(None);
-                                        Ok("Topic deleted".to_string())
-                                    }
-                                    Err(e) => Err(e.to_string()),
-                                }
-                            }
-                            "Zero retention" => {
-                                match topic.zero_retention().await {
-                                    Ok(r) => Ok(format!("{}: {}", r.topic, r.result)),
-                                    Err(e) => Err(e.to_string()),
-                                }
-                            }
-                            "Flip cleanup policy" => {
-                                match topic.flip_cleanup_policy().await {
-                                    Ok(r) => Ok(format!("{}: {}", r.topic, r.result)),
-                                    Err(e) => Err(e.to_string()),
-                                }
-                            }
-                            _ => Ok("Unknown action".to_string()),
-                        };
-                        match result {
-                            Ok(msg) => feedback.set(Some(msg)),
-                            Err(e) => feedback.set(Some(format!("Error: {e}"))),
-                        }
-                    });
-                }
-            },
-            "{label}"
+impl ChaosAction {
+    fn label(&self) -> &'static str {
+        match self {
+            Self::Delete => "Delete topic",
+            Self::ZeroRetention => "Zero retention",
+            Self::FlipCleanupPolicy => "Flip cleanup policy",
+            Self::IncreasePartitions(_) => "Increase partitions",
+            Self::PoisonPills(_) => "Poison pills",
+            Self::SchemaBreak(_) => "Schema break",
+        }
+    }
+
+    fn is_destructive(&self) -> bool {
+        matches!(self, Self::Delete)
+    }
+
+    fn has_input(&self) -> bool {
+        matches!(self, Self::IncreasePartitions(_) | Self::PoisonPills(_) | Self::SchemaBreak(_))
+    }
+
+    fn default_value(&self) -> i64 {
+        match self {
+            Self::IncreasePartitions(v) | Self::PoisonPills(v) | Self::SchemaBreak(v) => *v,
+            _ => 0,
+        }
+    }
+
+    async fn execute(&self, topic: &siege_api_client::Topic<'_>, value: i64) -> Result<String, String> {
+        match self {
+            Self::Delete => topic.delete().await.map(|()| "Topic deleted".to_string()).map_err(|e| e.to_string()),
+            Self::ZeroRetention => topic.zero_retention().await.map(|r| r.result).map_err(|e| e.to_string()),
+            Self::FlipCleanupPolicy => topic.flip_cleanup_policy().await.map(|r| r.result).map_err(|e| e.to_string()),
+            Self::IncreasePartitions(_) => topic.increase_partitions(value as i32).await.map(|r| r.result).map_err(|e| e.to_string()),
+            Self::PoisonPills(_) => topic.poison_pills(value as u32).await.map(|r| r.result).map_err(|e| e.to_string()),
+            Self::SchemaBreak(_) => topic.schema_break(value as u32).await.map(|r| r.result).map_err(|e| e.to_string()),
         }
     }
 }
 
 #[component]
-fn ChaosNumberInput(
-    label: &'static str,
-    name: String,
-    feedback: Signal<Option<String>>,
-    default_value: i64,
-) -> Element {
+fn ChaosRow(action: ChaosAction, name: String, feedback: Signal<Option<String>>) -> Element {
     let state = use_context::<AppState>();
+    let mut topics_state = use_context::<TopicsState>();
+    let default_value = action.default_value();
     let mut input_value = use_signal(move || default_value.to_string());
+
+    let btn_class = if action.is_destructive() {
+        "px-3 py-1.5 rounded-md text-xs font-medium bg-destructive text-destructive-foreground hover:bg-destructive-hover cursor-pointer transition-colors"
+    } else {
+        "px-3 py-1.5 rounded-md text-xs font-medium bg-amber-600 text-white hover:bg-amber-700 cursor-pointer transition-colors"
+    };
+
+    let has_input = action.has_input();
+    let label = action.label();
 
     rsx! {
         div { class: "flex items-center gap-2",
             button {
-                class: "px-3 py-1.5 rounded-md text-xs font-medium bg-amber-600 text-white hover:bg-amber-700 cursor-pointer transition-colors",
+                class: btn_class,
                 onclick: {
                     let name = name.clone();
-                    let label = label;
+                    let action = action.clone();
                     move |_| {
                         let client = state.client();
                         let name = name.clone();
-                        let value = input_value().parse::<i64>().unwrap_or(default_value);
+                        let action = action.clone();
+                        let value = input_value().parse::<i64>().unwrap_or(action.default_value());
                         let mut feedback = feedback;
                         spawn(async move {
                             let topic = client.topic(&name);
-                            let result = match label {
-                                "Increase partitions" => {
-                                    match topic.increase_partitions(value as i32).await {
-                                        Ok(r) => Ok(format!("{}: {}", r.topic, r.result)),
-                                        Err(e) => Err(e.to_string()),
+                            match action.execute(&topic, value).await {
+                                Ok(msg) => {
+                                    if matches!(action, ChaosAction::Delete) {
+                                        topics_state.selected.set(None);
                                     }
+                                    feedback.set(Some(msg));
                                 }
-                                "Poison pills" => {
-                                    match topic.poison_pills(value as u32).await {
-                                        Ok(r) => Ok(format!("{}: {}", r.topic, r.result)),
-                                        Err(e) => Err(e.to_string()),
-                                    }
-                                }
-                                "Schema break" => {
-                                    match topic.schema_break(value as u32).await {
-                                        Ok(r) => Ok(format!("{}: {}", r.topic, r.result)),
-                                        Err(e) => Err(e.to_string()),
-                                    }
-                                }
-                                _ => Ok("Unknown action".to_string()),
-                            };
-                            match result {
-                                Ok(msg) => feedback.set(Some(msg)),
                                 Err(e) => feedback.set(Some(format!("Error: {e}"))),
                             }
                         });
@@ -261,11 +208,13 @@ fn ChaosNumberInput(
                 },
                 "{label}"
             }
-            input {
-                r#type: "number",
-                class: "w-20 px-2 py-1.5 rounded-md text-xs border border-border bg-background text-foreground",
-                value: "{input_value}",
-                oninput: move |e| input_value.set(e.value()),
+            if has_input {
+                input {
+                    r#type: "number",
+                    class: "w-20 px-2 py-1.5 rounded-md text-xs border border-border bg-background text-foreground",
+                    value: "{input_value}",
+                    oninput: move |e| input_value.set(e.value()),
+                }
             }
         }
     }
