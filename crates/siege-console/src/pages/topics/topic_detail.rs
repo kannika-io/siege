@@ -35,11 +35,7 @@ pub fn TopicDetailPanel(detail: TopicDetailResource) -> Element {
                     TopicPills { partitions: detail.partitions, replication_factor: detail.replication_factor, config: detail.config.clone() }
                 }
 
-                if !detail.config.is_empty() {
-                    ConfigTable { config: detail.config.clone(), show_all: show_all_config }
-                }
-
-                div { class: "px-6 py-4",
+                div { class: "px-6 py-4 border-b border-border",
                     h3 { class: "text-xs font-semibold text-muted-foreground uppercase tracking-wider mb-3",
                         "Chaos"
                     }
@@ -58,6 +54,10 @@ pub fn TopicDetailPanel(detail: TopicDetailResource) -> Element {
                         ChaosRow { action: ChaosAction::PoisonPills(10), name: name.clone(), feedback }
                         ChaosRow { action: ChaosAction::SchemaBreak(10), name: name.clone(), feedback }
                     }
+                }
+
+                if !detail.config.is_empty() {
+                    ConfigTable { config: detail.config.clone(), show_all: show_all_config }
                 }
             }
         }
