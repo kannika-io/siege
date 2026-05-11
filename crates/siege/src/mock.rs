@@ -1,8 +1,8 @@
 use std::collections::HashMap;
 use std::sync::{Arc, Mutex};
 
-use crate::kafka::KafkaBackend;
-use crate::{KafkaProperties, SiegeError, Topic, TopicDetail};
+use crate::kafka::{KafkaBackend, TopicDetail, TopicMeta};
+use crate::{KafkaProperties, SiegeError};
 
 #[derive(Clone, Default)]
 pub struct MockKafkaBackend {
@@ -23,13 +23,13 @@ impl MockKafkaBackend {
 }
 
 impl KafkaBackend for MockKafkaBackend {
-    fn list_topics(&self) -> impl Future<Output = Result<Vec<Topic>, SiegeError>> + Send {
-        let topics: Vec<Topic> = self
+    fn list_topics(&self) -> impl Future<Output = Result<Vec<TopicMeta>, SiegeError>> + Send {
+        let topics: Vec<TopicMeta> = self
             .topics
             .lock()
             .unwrap()
             .values()
-            .map(|d| Topic {
+            .map(|d| TopicMeta {
                 name: d.name.clone(),
                 partitions: d.partitions,
                 replication_factor: d.replication_factor,

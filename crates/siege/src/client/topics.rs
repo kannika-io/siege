@@ -1,8 +1,8 @@
 use siege_kernel::KafkaProperties;
 
-use crate::event::{DomainEvent, EventEmitter};
+use crate::event::{DomainEvent, EventEmitter, TopicCreatedEvent, TopicDeletedEvent};
 use crate::kafka::KafkaBackend;
-use crate::{SiegeContext, SiegeError, Topic, TopicCreated, TopicDeleted, TopicDetail};
+use crate::{SiegeContext, SiegeError, Topic};
 
 pub struct Topics<'a, C: SiegeContext> {
     ctx: &'a C,
@@ -13,12 +13,22 @@ impl<'a, C: SiegeContext> Topics<'a, C> {
         Self { ctx }
     }
 
-    pub async fn list(&self) -> Result<Vec<Topic>, SiegeError> {
-        self.ctx.kafka().list_topics().await
+    pub async fn list(&self) -> Result<Vec<Topic<'a, C>>, SiegeError> {
+        let metas = self.ctx.kafka().list_topics().await?;
+        Ok(metas
+            .into_iter()
+            .map(|m| Topic::new(self.ctx, m.name, m.partitions, m.replication_factor))
+            .collect())
     }
 
-    pub async fn get(&self, name: &str) -> Result<TopicDetail, SiegeError> {
-        self.ctx.kafka().get_topic(name).await
+    pub async fn get(&self, name: &str) -> Result<Topic<'a, C>, SiegeError> {
+        let detail = self.ctx.kafka().get_topic(name).await?;
+        Ok(Topic::new(
+            self.ctx,
+            detail.name,
+            detail.partitions,
+            detail.replication_factor,
+        ))
     }
 
     pub async fn create(
@@ -27,29 +37,34 @@ impl<'a, C: SiegeContext> Topics<'a, C> {
         partitions: i32,
         replication_factor: i32,
         config: KafkaProperties,
-    ) -> Result<TopicCreated, SiegeError> {
+    ) -> Result<Topic<'a, C>, SiegeError> {
         self.ctx
             .kafka()
             .create_topic(name, partitions, replication_factor, config)
             .await?;
-        let topic = Topic {
-            name: name.to_owned(),
+        self.ctx.events().emit(&DomainEvent::TopicCreated(
+            TopicCreatedEvent {
+                name: name.to_owned(),
+                partitions,
+                replication_factor,
+            },
+        ));
+        Ok(Topic::new(
+            self.ctx,
+            name.to_owned(),
             partitions,
             replication_factor,
-        };
-        self.ctx
-            .events()
-            .emit(&DomainEvent::TopicCreated { topic: topic.clone() });
-        Ok(TopicCreated { topic })
+        ))
     }
 
-    pub async fn delete(&self, name: &str) -> Result<TopicDeleted, SiegeError> {
+    pub async fn delete(&self, name: &str) -> Result<(), SiegeError> {
         self.ctx.kafka().delete_topic(name).await?;
-        let name = name.to_owned();
-        self.ctx
-            .events()
-            .emit(&DomainEvent::TopicDeleted { name: name.clone() });
-        Ok(TopicDeleted { name })
+        self.ctx.events().emit(&DomainEvent::TopicDeleted(
+            TopicDeletedEvent {
+                name: name.to_owned(),
+            },
+        ));
+        Ok(())
     }
 
     pub async fn update_config(
@@ -57,6 +72,9 @@ impl<'a, C: SiegeContext> Topics<'a, C> {
         name: &str,
         config: KafkaProperties,
     ) -> Result<(), SiegeError> {
-        self.ctx.kafka().update_topic_config(name, config).await
+        self.ctx
+            .kafka()
+            .update_topic_config(name, config)
+            .await
     }
 }

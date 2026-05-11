@@ -1,19 +1,23 @@
+use siege::SiegeContext;
 use siege_api_spec::{TopicDetailResource, TopicResource};
-use siege::{Topic, TopicDetail};
+use siege::KafkaProperties;
 
-pub fn topic_to_resource(t: Topic) -> TopicResource {
+pub fn topic_to_resource<C: SiegeContext>(t: &siege::Topic<'_, C>) -> TopicResource {
     TopicResource {
-        name: t.name,
+        name: t.name.clone(),
         partitions: t.partitions,
         replication_factor: t.replication_factor,
     }
 }
 
-pub fn detail_to_resource(d: TopicDetail) -> TopicDetailResource {
+pub fn topic_to_detail_resource<C: SiegeContext>(
+    t: &siege::Topic<'_, C>,
+    config: KafkaProperties,
+) -> TopicDetailResource {
     TopicDetailResource {
-        name: d.name,
-        partitions: d.partitions,
-        replication_factor: d.replication_factor,
-        config: d.config,
+        name: t.name.clone(),
+        partitions: t.partitions,
+        replication_factor: t.replication_factor,
+        config,
     }
 }

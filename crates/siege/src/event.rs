@@ -1,14 +1,16 @@
-use crate::{Topic, TopicDeleted};
-
-pub enum DomainEvent {
-    TopicCreated { topic: Topic },
-    TopicDeleted { name: String },
+pub struct TopicCreatedEvent {
+    pub name: String,
+    pub partitions: i32,
+    pub replication_factor: i32,
 }
 
-impl From<TopicDeleted> for DomainEvent {
-    fn from(e: TopicDeleted) -> Self {
-        DomainEvent::TopicDeleted { name: e.name }
-    }
+pub struct TopicDeletedEvent {
+    pub name: String,
+}
+
+pub enum DomainEvent {
+    TopicCreated(TopicCreatedEvent),
+    TopicDeleted(TopicDeletedEvent),
 }
 
 pub trait EventEmitter: Send + Sync + 'static {

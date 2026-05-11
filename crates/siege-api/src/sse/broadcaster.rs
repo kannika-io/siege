@@ -26,18 +26,18 @@ impl Broadcaster {
 impl EventEmitter for Broadcaster {
     fn emit(&self, event: &DomainEvent) {
         match event {
-            DomainEvent::TopicCreated { topic } => {
+            DomainEvent::TopicCreated(e) => {
                 self.send(SseEvent::TopicCreated {
                     topic: TopicResource {
-                        name: topic.name.clone(),
-                        partitions: topic.partitions,
-                        replication_factor: topic.replication_factor,
+                        name: e.name.clone(),
+                        partitions: e.partitions,
+                        replication_factor: e.replication_factor,
                     },
                 });
             }
-            DomainEvent::TopicDeleted { name } => {
+            DomainEvent::TopicDeleted(e) => {
                 self.send(SseEvent::TopicDeleted {
-                    name: name.clone(),
+                    name: e.name.clone(),
                 });
             }
         }
@@ -46,6 +46,8 @@ impl EventEmitter for Broadcaster {
 
 #[cfg(test)]
 mod tests {
+    use siege::event::{TopicCreatedEvent, TopicDeletedEvent};
+
     use super::*;
 
     #[tokio::test]
@@ -73,14 +75,11 @@ mod tests {
         let bc = Broadcaster::new(16);
         let mut rx = bc.subscribe();
 
-        let event = DomainEvent::TopicCreated {
-            topic: siege::Topic {
-                name: "new-topic".into(),
-                partitions: 3,
-                replication_factor: 1,
-            },
-        };
-        bc.emit(&event);
+        bc.emit(&DomainEvent::TopicCreated(TopicCreatedEvent {
+            name: "new-topic".into(),
+            partitions: 3,
+            replication_factor: 1,
+        }));
 
         let received = rx.try_recv().unwrap();
         assert!(matches!(received, SseEvent::TopicCreated { topic } if topic.name == "new-topic"));
@@ -91,10 +90,9 @@ mod tests {
         let bc = Broadcaster::new(16);
         let mut rx = bc.subscribe();
 
-        let event = DomainEvent::TopicDeleted {
+        bc.emit(&DomainEvent::TopicDeleted(TopicDeletedEvent {
             name: "gone".into(),
-        };
-        bc.emit(&event);
+        }));
 
         let received = rx.try_recv().unwrap();
         assert!(matches!(received, SseEvent::TopicDeleted { name } if name == "gone"));

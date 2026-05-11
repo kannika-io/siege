@@ -9,7 +9,7 @@ pub mod kafka;
 
 pub use context::*;
 pub use error::*;
-pub use event::*;
+pub use event::{DomainEvent, EventEmitter, TopicCreatedEvent, TopicDeletedEvent};
 pub use mock::MockKafkaBackend;
 pub use siege_kernel::KafkaProperties;
-pub use topic::*;
+pub use topic::Topic;
