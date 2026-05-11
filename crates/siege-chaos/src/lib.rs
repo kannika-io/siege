@@ -21,6 +21,13 @@ impl ChaosClient {
         }
     }
 
+    pub async fn get_topic(
+        &self,
+        name: &str,
+    ) -> Result<siege::kafka::TopicDetail, ChaosError> {
+        Ok(self.backend.get_topic(name).await?)
+    }
+
     pub async fn delete_topic(&self, topic: &str) -> Result<(), ChaosError> {
         self.backend.delete_topic(topic).await?;
         Ok(())
