@@ -19,6 +19,7 @@ pub struct Topic<'a, C: SiegeContext> {
     pub name: String,
     pub partitions: i32,
     pub replication_factor: i32,
+    pub config: KafkaProperties,
 }
 
 impl<'a, C: SiegeContext> Topic<'a, C> {
@@ -27,18 +28,15 @@ impl<'a, C: SiegeContext> Topic<'a, C> {
         name: String,
         partitions: i32,
         replication_factor: i32,
+        config: KafkaProperties,
     ) -> Self {
         Self {
             ctx,
             name,
             partitions,
             replication_factor,
+            config,
         }
-    }
-
-    pub async fn config(&self) -> Result<KafkaProperties, SiegeError> {
-        let detail = self.ctx.kafka().get_topic(&self.name).await?;
-        Ok(detail.config)
     }
 
     pub async fn delete(self) -> Result<(), SiegeError> {

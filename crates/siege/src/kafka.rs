@@ -9,6 +9,7 @@ pub struct TopicMeta {
     pub name: String,
     pub partitions: i32,
     pub replication_factor: i32,
+    pub config: KafkaProperties,
 }
 
 #[derive(Debug, Clone, PartialEq)]

@@ -17,7 +17,7 @@ impl<'a, C: SiegeContext> Topics<'a, C> {
         let metas = self.ctx.kafka().list_topics().await?;
         Ok(metas
             .into_iter()
-            .map(|m| Topic::new(self.ctx, m.name, m.partitions, m.replication_factor))
+            .map(|m| Topic::new(self.ctx, m.name, m.partitions, m.replication_factor, m.config))
             .collect())
     }
 
@@ -28,6 +28,7 @@ impl<'a, C: SiegeContext> Topics<'a, C> {
             detail.name,
             detail.partitions,
             detail.replication_factor,
+            detail.config,
         ))
     }
 
@@ -40,13 +41,14 @@ impl<'a, C: SiegeContext> Topics<'a, C> {
     ) -> Result<Topic<'a, C>, SiegeError> {
         self.ctx
             .kafka()
-            .create_topic(name, partitions, replication_factor, config)
+            .create_topic(name, partitions, replication_factor, config.clone())
             .await?;
         self.ctx.events().emit(&DomainEvent::TopicCreated(
             TopicCreatedEvent {
                 name: name.to_owned(),
                 partitions,
                 replication_factor,
+                config: config.clone(),
             },
         ));
         Ok(Topic::new(
@@ -54,6 +56,7 @@ impl<'a, C: SiegeContext> Topics<'a, C> {
             name.to_owned(),
             partitions,
             replication_factor,
+            config,
         ))
     }
 

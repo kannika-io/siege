@@ -42,6 +42,7 @@ pub struct ApiDoc;
         (status = 502, description = "Kafka error", body = ListTopicsError)
     )
 )]
+#[allow(dead_code)]
 async fn list_topics() {}
 
 /// Get topic detail
@@ -54,6 +55,7 @@ async fn list_topics() {}
         (status = 404, description = "Topic not found", body = GetTopicError)
     )
 )]
+#[allow(dead_code)]
 async fn get_topic() {}
 
 /// Create a topic
@@ -66,6 +68,7 @@ async fn get_topic() {}
         (status = 409, description = "Topic already exists", body = CreateTopicError)
     )
 )]
+#[allow(dead_code)]
 async fn create_topic() {}
 
 /// Delete a topic
@@ -78,6 +81,7 @@ async fn create_topic() {}
         (status = 404, description = "Topic not found", body = DeleteTopicError)
     )
 )]
+#[allow(dead_code)]
 async fn delete_topic() {}
 
 /// Update topic configuration
@@ -91,6 +95,7 @@ async fn delete_topic() {}
         (status = 404, description = "Topic not found", body = UpdateTopicConfigError)
     )
 )]
+#[allow(dead_code)]
 async fn update_topic_config() {}
 
 /// Delete a topic (chaos)
@@ -104,6 +109,7 @@ async fn update_topic_config() {}
         (status = 502, description = "Kafka error", body = ChaosErrorResponse)
     )
 )]
+#[allow(dead_code)]
 async fn chaos_delete_topic() {}
 
 /// Set retention to zero (chaos)
@@ -117,6 +123,7 @@ async fn chaos_delete_topic() {}
         (status = 502, description = "Kafka error", body = ChaosErrorResponse)
     )
 )]
+#[allow(dead_code)]
 async fn chaos_zero_retention() {}
 
 /// Flip cleanup policy (chaos)
@@ -130,6 +137,7 @@ async fn chaos_zero_retention() {}
         (status = 502, description = "Kafka error", body = ChaosErrorResponse)
     )
 )]
+#[allow(dead_code)]
 async fn chaos_flip_cleanup_policy() {}
 
 /// Increase partition count (chaos)
@@ -142,6 +150,7 @@ async fn chaos_flip_cleanup_policy() {}
         (status = 502, description = "Kafka error", body = ChaosErrorResponse)
     )
 )]
+#[allow(dead_code)]
 async fn chaos_increase_partitions() {}
 
 /// Produce poison pill messages (chaos)
@@ -154,6 +163,7 @@ async fn chaos_increase_partitions() {}
         (status = 502, description = "Producer error", body = ChaosErrorResponse)
     )
 )]
+#[allow(dead_code)]
 async fn chaos_poison_pills() {}
 
 /// Produce schema-breaking messages (chaos)
@@ -166,6 +176,7 @@ async fn chaos_poison_pills() {}
         (status = 502, description = "Producer error", body = ChaosErrorResponse)
     )
 )]
+#[allow(dead_code)]
 async fn chaos_schema_break() {}
 
 #[cfg(test)]

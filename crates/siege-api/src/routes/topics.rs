@@ -21,8 +21,7 @@ pub async fn get_topic<C: SiegeContext>(
 ) -> Result<HttpResponse, HttpError> {
     let name = path.into_inner();
     let topic = client.topics().get(&name).await?;
-    let config = topic.config().await?;
-    Ok(HttpResponse::Ok().json(mapping::topic_to_detail_resource(&topic, config)))
+    Ok(HttpResponse::Ok().json(mapping::topic_to_detail_resource(&topic)))
 }
 
 pub async fn create_topic<C: SiegeContext>(

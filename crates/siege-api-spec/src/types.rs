@@ -7,6 +7,8 @@ pub struct TopicResource {
     pub name: String,
     pub partitions: i32,
     pub replication_factor: i32,
+    #[serde(default)]
+    pub config: KafkaProperties,
 }
 
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize, ToSchema)]
@@ -43,6 +45,7 @@ mod tests {
             name: "test-topic".into(),
             partitions: 6,
             replication_factor: 3,
+            config: KafkaProperties::new(),
         };
         let json = serde_json::to_string(&topic).unwrap();
         let deserialized: TopicResource = serde_json::from_str(&json).unwrap();

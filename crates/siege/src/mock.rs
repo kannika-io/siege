@@ -33,6 +33,7 @@ impl KafkaBackend for MockKafkaBackend {
                 name: d.name.clone(),
                 partitions: d.partitions,
                 replication_factor: d.replication_factor,
+                config: d.config.clone(),
             })
             .collect();
         async move { Ok(topics) }

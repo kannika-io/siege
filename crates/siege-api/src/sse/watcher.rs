@@ -30,6 +30,7 @@ pub async fn watch_cluster<K: KafkaBackend>(
                         name: topic.name.clone(),
                         partitions: topic.partitions,
                         replication_factor: topic.replication_factor,
+                        config: topic.config.clone(),
                     },
                 });
             }

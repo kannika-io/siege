@@ -32,6 +32,7 @@ impl EventEmitter for Broadcaster {
                         name: e.name.clone(),
                         partitions: e.partitions,
                         replication_factor: e.replication_factor,
+                        config: e.config.clone(),
                     },
                 });
             }
@@ -79,6 +80,7 @@ mod tests {
             name: "new-topic".into(),
             partitions: 3,
             replication_factor: 1,
+            config: siege::KafkaProperties::new(),
         }));
 
         let received = rx.try_recv().unwrap();

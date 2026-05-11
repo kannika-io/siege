@@ -2,6 +2,7 @@ pub struct TopicCreatedEvent {
     pub name: String,
     pub partitions: i32,
     pub replication_factor: i32,
+    pub config: siege_kernel::KafkaProperties,
 }
 
 pub struct TopicDeletedEvent {

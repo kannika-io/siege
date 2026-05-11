@@ -53,7 +53,7 @@ fn TopicRow(topic: TopicResource) -> Element {
                 });
             },
             span { class: "text-sm font-medium", "{topic.name}" }
-            TopicPills { partitions: topic.partitions, replication_factor: topic.replication_factor }
+            TopicPills { partitions: topic.partitions, replication_factor: topic.replication_factor, config: topic.config.clone() }
         }
     }
 }

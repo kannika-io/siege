@@ -144,7 +144,6 @@ mod tests {
             .await
             .unwrap();
         let topic = client.topics().get("t").await.unwrap();
-        let config = topic.config().await.unwrap();
-        assert_eq!(config.get("retention.ms").unwrap(), "1000");
+        assert_eq!(topic.config.get("retention.ms").unwrap(), "1000");
     }
 }

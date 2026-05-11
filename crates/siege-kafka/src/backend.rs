@@ -40,7 +40,7 @@ impl KafkaBackend for RdKafkaBackend {
                 .fetch_metadata(None, Duration::from_secs(10))
                 .map_err(|e| SiegeError::KafkaError(e.to_string()))?;
 
-            let topics = metadata
+            let mut topics: Vec<TopicMeta> = metadata
                 .topics()
                 .iter()
                 .filter(|t| !t.name().starts_with("__"))
@@ -52,8 +52,31 @@ impl KafkaBackend for RdKafkaBackend {
                         .first()
                         .map(|p| p.replicas().len() as i32)
                         .unwrap_or(0),
+                    config: KafkaProperties::new(),
                 })
                 .collect();
+
+            drop(metadata);
+
+            let specifiers: Vec<ResourceSpecifier> = topics
+                .iter()
+                .map(|t| ResourceSpecifier::Topic(&t.name))
+                .collect();
+
+            if let Ok(configs) = admin
+                .describe_configs(&specifiers, &AdminOptions::new())
+                .await
+            {
+                for (i, result) in configs.into_iter().enumerate() {
+                    if let Ok(resource) = result {
+                        for entry in resource.entries {
+                            if let Some(value) = entry.value {
+                                topics[i].config.insert(entry.name, value);
+                            }
+                        }
+                    }
+                }
+            }
 
             Ok(topics)
         }
