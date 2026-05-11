@@ -64,9 +64,11 @@ impl ChaosClient {
     pub async fn increase_partitions(
         &self,
         topic: &str,
-        partitions: i32,
+        extra: i32,
     ) -> Result<(), ChaosError> {
-        let new_parts = NewPartitions::new(topic, partitions as usize);
+        let detail = self.backend.get_topic(topic).await?;
+        let total = (detail.partitions + extra) as usize;
+        let new_parts = NewPartitions::new(topic, total);
         self.backend
             .admin()
             .create_partitions(&[new_parts], &AdminOptions::new())

@@ -4,6 +4,7 @@ mod pages;
 mod sse;
 mod state;
 
+use components::ui::toast::{ToastContainer, Toaster};
 use layouts::default::Layout;
 use pages::topics::TopicsPage;
 use dioxus::prelude::*;
@@ -22,10 +23,12 @@ fn App() -> Element {
         theme,
         api_url: API_URL,
     });
+    use_context_provider(Toaster::new);
 
     rsx! {
         Layout {
             TopicsPage {}
         }
+        ToastContainer {}
     }
 }

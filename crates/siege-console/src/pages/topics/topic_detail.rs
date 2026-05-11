@@ -2,6 +2,7 @@ use dioxus::prelude::*;
 use siege_api_client::{ChaosExt, KafkaProperties, TopicDetailResource};
 
 use super::topic_pills::TopicPills;
+use crate::components::ui::toast::Toaster;
 use crate::state::{AppState, TopicsState};
 
 const DEFAULT_HIGHLIGHTED_KEYS: &[&str] = &[
@@ -16,7 +17,6 @@ const DEFAULT_HIGHLIGHTED_KEYS: &[&str] = &[
 pub fn TopicDetailPanel(detail: TopicDetailResource) -> Element {
     let mut topics_state = use_context::<TopicsState>();
     let name = detail.name.clone();
-    let feedback = use_signal(|| None::<String>);
     let show_all_config = use_signal(|| false);
 
     rsx! {
@@ -40,19 +40,13 @@ pub fn TopicDetailPanel(detail: TopicDetailResource) -> Element {
                         "Chaos"
                     }
 
-                    if let Some(ref msg) = feedback() {
-                        div { class: "mb-3 px-3 py-2 rounded-md text-xs bg-muted text-foreground",
-                            "{msg}"
-                        }
-                    }
-
                     div { class: "flex flex-col gap-2",
-                        ChaosRow { action: ChaosAction::Delete, name: name.clone(), feedback }
-                        ChaosRow { action: ChaosAction::ZeroRetention, name: name.clone(), feedback }
-                        ChaosRow { action: ChaosAction::FlipCleanupPolicy, name: name.clone(), feedback }
-                        ChaosRow { action: ChaosAction::IncreasePartitions(100), name: name.clone(), feedback }
-                        ChaosRow { action: ChaosAction::PoisonPills(10), name: name.clone(), feedback }
-                        ChaosRow { action: ChaosAction::SchemaBreak(10), name: name.clone(), feedback }
+                        ChaosRow { action: ChaosAction::Delete, name: name.clone() }
+                        ChaosRow { action: ChaosAction::ZeroRetention, name: name.clone() }
+                        ChaosRow { action: ChaosAction::FlipCleanupPolicy, name: name.clone() }
+                        ChaosRow { action: ChaosAction::IncreasePartitions, name: name.clone() }
+                        ChaosRow { action: ChaosAction::PoisonPills(10), name: name.clone() }
+                        ChaosRow { action: ChaosAction::SchemaBreak(10), name: name.clone() }
                     }
                 }
 
@@ -119,7 +113,7 @@ enum ChaosAction {
     Delete,
     ZeroRetention,
     FlipCleanupPolicy,
-    IncreasePartitions(i64),
+    IncreasePartitions,
     PoisonPills(i64),
     SchemaBreak(i64),
 }
@@ -130,7 +124,7 @@ impl ChaosAction {
             Self::Delete => "Delete topic",
             Self::ZeroRetention => "Zero retention",
             Self::FlipCleanupPolicy => "Flip cleanup policy",
-            Self::IncreasePartitions(_) => "Increase partitions",
+            Self::IncreasePartitions => "Add partition",
             Self::PoisonPills(_) => "Poison pills",
             Self::SchemaBreak(_) => "Schema break",
         }
@@ -141,32 +135,44 @@ impl ChaosAction {
     }
 
     fn has_input(&self) -> bool {
-        matches!(self, Self::IncreasePartitions(_) | Self::PoisonPills(_) | Self::SchemaBreak(_))
+        matches!(self, Self::PoisonPills(_) | Self::SchemaBreak(_))
     }
 
     fn default_value(&self) -> i64 {
         match self {
-            Self::IncreasePartitions(v) | Self::PoisonPills(v) | Self::SchemaBreak(v) => *v,
+            Self::PoisonPills(v) | Self::SchemaBreak(v) => *v,
             _ => 0,
         }
     }
 
-    async fn execute(&self, topic: &siege_api_client::Topic<'_>, value: i64) -> Result<String, String> {
+    fn success_message(&self, name: &str) -> String {
         match self {
-            Self::Delete => topic.delete().await.map(|()| "Topic deleted".to_string()).map_err(|e| e.to_string()),
-            Self::ZeroRetention => topic.zero_retention().await.map(|r| r.result).map_err(|e| e.to_string()),
-            Self::FlipCleanupPolicy => topic.flip_cleanup_policy().await.map(|r| r.result).map_err(|e| e.to_string()),
-            Self::IncreasePartitions(_) => topic.increase_partitions(value as i32).await.map(|r| r.result).map_err(|e| e.to_string()),
-            Self::PoisonPills(_) => topic.poison_pills(value as u32).await.map(|r| r.result).map_err(|e| e.to_string()),
-            Self::SchemaBreak(_) => topic.schema_break(value as u32).await.map(|r| r.result).map_err(|e| e.to_string()),
+            Self::Delete => format!("Deleted topic '{name}'"),
+            Self::ZeroRetention => format!("Set retention to zero for '{name}'"),
+            Self::FlipCleanupPolicy => format!("Flipped cleanup policy for '{name}'"),
+            Self::IncreasePartitions => format!("Increased partitions for '{name}'"),
+            Self::PoisonPills(n) => format!("Sent {n} poison pills to '{name}'"),
+            Self::SchemaBreak(n) => format!("Sent {n} schema-breaking messages to '{name}'"),
+        }
+    }
+
+    async fn execute(&self, topic: &siege_api_client::Topic<'_>, value: i64) -> Result<(), String> {
+        match self {
+            Self::Delete => topic.delete().await.map_err(|e| e.to_string()),
+            Self::ZeroRetention => topic.zero_retention().await.map(|_| ()).map_err(|e| e.to_string()),
+            Self::FlipCleanupPolicy => topic.flip_cleanup_policy().await.map(|_| ()).map_err(|e| e.to_string()),
+            Self::IncreasePartitions => topic.increase_partitions(1).await.map(|_| ()).map_err(|e| e.to_string()),
+            Self::PoisonPills(_) => topic.poison_pills(value as u32).await.map(|_| ()).map_err(|e| e.to_string()),
+            Self::SchemaBreak(_) => topic.schema_break(value as u32).await.map(|_| ()).map_err(|e| e.to_string()),
         }
     }
 }
 
 #[component]
-fn ChaosRow(action: ChaosAction, name: String, feedback: Signal<Option<String>>) -> Element {
+fn ChaosRow(action: ChaosAction, name: String) -> Element {
     let state = use_context::<AppState>();
     let mut topics_state = use_context::<TopicsState>();
+    let mut toaster = use_context::<Toaster>();
     let default_value = action.default_value();
     let mut input_value = use_signal(move || default_value.to_string());
 
@@ -191,17 +197,17 @@ fn ChaosRow(action: ChaosAction, name: String, feedback: Signal<Option<String>>)
                         let name = name.clone();
                         let action = action.clone();
                         let value = input_value().parse::<i64>().unwrap_or(action.default_value());
-                        let mut feedback = feedback;
+                        let msg = action.success_message(&name);
                         spawn(async move {
                             let topic = client.topic(&name);
                             match action.execute(&topic, value).await {
-                                Ok(msg) => {
+                                Ok(()) => {
                                     if matches!(action, ChaosAction::Delete) {
                                         topics_state.selected.set(None);
                                     }
-                                    feedback.set(Some(msg));
+                                    toaster.success(msg);
                                 }
-                                Err(e) => feedback.set(Some(format!("Error: {e}"))),
+                                Err(e) => toaster.error(e),
                             }
                         });
                     }
