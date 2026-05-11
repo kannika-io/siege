@@ -1,14 +1,23 @@
 use dioxus::prelude::*;
-use siege_api_client::{ChaosExt, TopicDetailResource};
+use siege_api_client::{ChaosExt, KafkaProperties, TopicDetailResource};
 
 use super::topic_pills::TopicPills;
 use crate::state::AppState;
+
+const DEFAULT_HIGHLIGHTED_KEYS: &[&str] = &[
+    "cleanup.policy",
+    "max.message.bytes",
+    "min.insync.replicas",
+    "retention.bytes",
+    "retention.ms",
+];
 
 #[component]
 pub fn TopicDetailPanel(detail: TopicDetailResource) -> Element {
     let mut state = use_context::<AppState>();
     let name = detail.name.clone();
     let feedback = use_signal(|| None::<String>);
+    let show_all_config = use_signal(|| false);
 
     rsx! {
         div { class: "flex flex-col h-full",
@@ -27,29 +36,7 @@ pub fn TopicDetailPanel(detail: TopicDetailResource) -> Element {
                 }
 
                 if !detail.config.is_empty() {
-                    div { class: "px-6 py-4 border-b border-border",
-                        h3 { class: "text-xs font-semibold text-muted-foreground uppercase tracking-wider mb-3",
-                            "Configuration"
-                        }
-                        div { class: "border border-border rounded-lg overflow-hidden",
-                            table { class: "w-full text-sm",
-                                thead {
-                                    tr { class: "bg-muted",
-                                        th { class: "text-left px-3 py-2 text-xs font-medium text-muted-foreground", "Key" }
-                                        th { class: "text-left px-3 py-2 text-xs font-medium text-muted-foreground", "Value" }
-                                    }
-                                }
-                                tbody {
-                                    for (key, value) in detail.config.iter() {
-                                        tr { class: "border-t border-border",
-                                            td { class: "px-3 py-2 text-xs break-all", "{key}" }
-                                            td { class: "px-3 py-2 text-xs text-muted-foreground break-all", "{value}" }
-                                        }
-                                    }
-                                }
-                            }
-                        }
-                    }
+                    ConfigTable { config: detail.config.clone(), show_all: show_all_config }
                 }
 
                 div { class: "px-6 py-4",
@@ -99,6 +86,56 @@ pub fn TopicDetailPanel(detail: TopicDetailResource) -> Element {
                             name: name.clone(),
                             feedback: feedback,
                             default_value: 10,
+                        }
+                    }
+                }
+            }
+        }
+    }
+}
+
+#[component]
+fn ConfigTable(config: KafkaProperties, mut show_all: Signal<bool>) -> Element {
+    let mut all: Vec<(&String, &String)> = config.iter().collect();
+    all.sort_by_key(|(k, _)| k.as_str());
+    let highlighted: Vec<(&String, &String)> = all
+        .iter()
+        .filter(|(k, _)| DEFAULT_HIGHLIGHTED_KEYS.contains(&k.as_str()))
+        .copied()
+        .collect();
+    let has_more = all.len() > highlighted.len();
+
+    let entries = if show_all() { &all } else { &highlighted };
+
+    rsx! {
+        div { class: "px-6 py-4 border-b border-border",
+            h3 { class: "text-xs font-semibold text-muted-foreground uppercase tracking-wider mb-3",
+                "Configuration"
+            }
+            div { class: "border border-border rounded-lg overflow-hidden",
+                table { class: "w-full text-sm",
+                    thead {
+                        tr { class: "bg-muted",
+                            th { class: "text-left px-3 py-2 text-xs font-medium text-muted-foreground", "Key" }
+                            th { class: "text-left px-3 py-2 text-xs font-medium text-muted-foreground", "Value" }
+                        }
+                    }
+                    tbody {
+                        for (key, value) in entries {
+                            tr { class: "border-t border-border",
+                                td { class: "px-3 py-2 text-xs break-all", "{key}" }
+                                td { class: "px-3 py-2 text-xs text-muted-foreground break-all", "{value}" }
+                            }
+                        }
+                        if has_more {
+                            tr { class: "border-t border-border",
+                                td {
+                                    class: "px-3 py-2 text-xs text-accent cursor-pointer hover:underline",
+                                    colspan: 2,
+                                    onclick: move |_| show_all.set(!show_all()),
+                                    if show_all() { "Show less" } else { "Show all\u{2026}" }
+                                }
+                            }
                         }
                     }
                 }
