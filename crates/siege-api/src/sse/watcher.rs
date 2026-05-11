@@ -54,7 +54,7 @@ mod tests {
     use siege::KafkaProperties;
 
     use super::*;
-    use crate::kafka::mock::MockKafkaBackend;
+    use siege::MockKafkaBackend;
 
     #[tokio::test]
     async fn watcher_detects_new_topic() {

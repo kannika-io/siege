@@ -100,7 +100,7 @@ mod tests {
     use actix_web::{test, App};
     use siege::{KafkaProperties, SiegeContext, TopicDetail};
 
-    use crate::kafka::mock::MockKafkaBackend;
+    use siege::MockKafkaBackend;
     use crate::routes::configure;
     use crate::sse::broadcaster::Broadcaster;
 
