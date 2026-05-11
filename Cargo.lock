@@ -3475,6 +3475,20 @@ dependencies = [
 ]
 
 [[package]]
+name = "siege-chaos"
+version = "0.1.0"
+dependencies = [
+ "rand 0.9.4",
+ "rdkafka",
+ "serde",
+ "serde_json",
+ "siege",
+ "siege-kafka",
+ "thiserror 2.0.18",
+ "tokio",
+]
+
+[[package]]
 name = "siege-console"
 version = "0.1.0"
 dependencies = [
