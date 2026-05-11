@@ -3445,6 +3445,7 @@ dependencies = [
  "serde_json",
  "siege",
  "siege-api-spec",
+ "siege-chaos",
  "siege-kafka",
  "tokio",
  "tokio-stream",
