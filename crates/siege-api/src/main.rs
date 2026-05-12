@@ -14,7 +14,7 @@ use utoipa_swagger_ui::SwaggerUi;
 
 use siege_chaos::ChaosClient;
 use siege_kafka::RdKafkaBackend;
-use siege_seed::Seeder;
+use siege_seed::{Seeder, TopicSeed};
 use sse::broadcaster::Broadcaster;
 
 pub(crate) struct Siege {
@@ -66,7 +66,13 @@ async fn main() -> std::io::Result<()> {
 
     let backend = RdKafkaBackend::new(&cli.bootstrap_servers);
     let chaos = ChaosClient::new(backend.clone());
-    let seeder = Seeder::new(backend.clone());
+    let seeder = Seeder::new(backend.clone())
+        .topic(TopicSeed::new("kings-landing", 6))
+        .topic(TopicSeed::new("winterfell", 3))
+        .topic(TopicSeed::new("the-wall", 1))
+        .topic(TopicSeed::new("iron-islands", 3))
+        .topic(TopicSeed::new("dragonstone", 3))
+        .topic(TopicSeed::new("the-citadel", 1).config("cleanup.policy", "compact"));
 
     if cli.seed {
         if let Err(e) = seeder.seed_topics().await {

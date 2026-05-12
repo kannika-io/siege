@@ -1,49 +1,45 @@
 use siege::kafka::KafkaBackend;
 use siege::{KafkaProperties, SeedBackend, SeedResult, SiegeError};
 
-struct TopicSeed {
-    name: &'static str,
+pub struct TopicSeed {
+    name: String,
     partitions: i32,
     replication_factor: i32,
     config: KafkaProperties,
 }
 
 impl TopicSeed {
-    fn new(name: &'static str, partitions: i32) -> Self {
+    pub fn new(name: &str, partitions: i32) -> Self {
         Self {
-            name,
+            name: name.to_owned(),
             partitions,
             replication_factor: 1,
             config: KafkaProperties::new(),
         }
     }
 
-    fn config(mut self, key: &str, value: &str) -> Self {
+    pub fn config(mut self, key: &str, value: &str) -> Self {
         self.config.insert(key.into(), value.into());
         self
     }
 }
 
-fn topic_seeds() -> Vec<TopicSeed> {
-    vec![
-        TopicSeed::new("kings-landing", 6),
-        TopicSeed::new("winterfell", 3),
-        TopicSeed::new("the-wall", 1),
-        TopicSeed::new("iron-islands", 3),
-        TopicSeed::new("dragonstone", 3),
-        TopicSeed::new("the-citadel", 1).config("cleanup.policy", "compact"),
-    ]
-}
-
 pub struct Seeder {
     backend: Box<dyn KafkaBackend>,
+    seeds: Vec<TopicSeed>,
 }
 
 impl Seeder {
     pub fn new(backend: impl KafkaBackend) -> Self {
         Self {
             backend: Box::new(backend),
+            seeds: Vec::new(),
         }
+    }
+
+    pub fn topic(mut self, seed: TopicSeed) -> Self {
+        self.seeds.push(seed);
+        self
     }
 }
 
@@ -54,19 +50,19 @@ impl SeedBackend for Seeder {
         let mut created = Vec::new();
         let mut skipped = Vec::new();
 
-        for seed in topic_seeds() {
+        for seed in &self.seeds {
             match self
                 .backend
                 .create_topic(
-                    seed.name,
+                    &seed.name,
                     seed.partitions,
                     seed.replication_factor,
-                    seed.config,
+                    seed.config.clone(),
                 )
                 .await
             {
-                Ok(()) => created.push(seed.name.to_owned()),
-                Err(_) => skipped.push(seed.name.to_owned()),
+                Ok(()) => created.push(seed.name.clone()),
+                Err(_) => skipped.push(seed.name.clone()),
             }
         }
 
