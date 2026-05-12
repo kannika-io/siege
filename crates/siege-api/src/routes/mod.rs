@@ -1,4 +1,5 @@
 pub mod chaos;
+pub mod seed;
 pub mod topics;
 
 use actix_web::web;
@@ -22,27 +23,28 @@ pub fn configure<C: SiegeContext>(cfg: &mut web::ServiceConfig) {
             .route("/events", web::get().to(topics::events::<C>))
             .route(
                 "/chaos/delete-topic",
-                web::post().to(chaos::delete_topic),
+                web::post().to(chaos::delete_topic::<C>),
             )
             .route(
                 "/chaos/zero-retention",
-                web::post().to(chaos::zero_retention),
+                web::post().to(chaos::zero_retention::<C>),
             )
             .route(
                 "/chaos/flip-cleanup-policy",
-                web::post().to(chaos::flip_cleanup_policy),
+                web::post().to(chaos::flip_cleanup_policy::<C>),
             )
             .route(
                 "/chaos/increase-partitions",
-                web::post().to(chaos::increase_partitions),
+                web::post().to(chaos::increase_partitions::<C>),
             )
             .route(
                 "/chaos/poison-pills",
-                web::post().to(chaos::poison_pills),
+                web::post().to(chaos::poison_pills::<C>),
             )
             .route(
                 "/chaos/schema-break",
-                web::post().to(chaos::schema_break),
-            ),
+                web::post().to(chaos::schema_break::<C>),
+            )
+            .route("/seed", web::post().to(seed::run_seed::<C>)),
     );
 }

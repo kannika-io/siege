@@ -13,6 +13,14 @@ impl<C: SiegeContext> Client<C> {
         Self { ctx }
     }
 
+    pub fn chaos(&self) -> &C::Chaos {
+        self.ctx.chaos()
+    }
+
+    pub fn seeder(&self) -> &C::Seeder {
+        self.ctx.seeder()
+    }
+
     pub fn topics(&self) -> Topics<'_, C> {
         Topics::new(&self.ctx)
     }
@@ -23,7 +31,8 @@ mod tests {
     use std::sync::Mutex;
 
     use crate::{
-        EventEmitter, KafkaProperties, MockKafkaBackend, SiegeContext, SiegeError,
+        EventEmitter, KafkaProperties, MockKafkaBackend, NoopChaos, NoopSeeder, SiegeContext,
+        SiegeError,
     };
     use crate::event::DomainEvent;
     use crate::kafka::TopicDetail;
@@ -48,24 +57,28 @@ mod tests {
     struct TestCtx {
         kafka: MockKafkaBackend,
         events: RecordingEmitter,
+        chaos: NoopChaos,
+        seeder: NoopSeeder,
     }
 
     impl SiegeContext for TestCtx {
         type Kafka = MockKafkaBackend;
         type Events = RecordingEmitter;
+        type Chaos = NoopChaos;
+        type Seeder = NoopSeeder;
 
-        fn kafka(&self) -> &MockKafkaBackend {
-            &self.kafka
-        }
-        fn events(&self) -> &RecordingEmitter {
-            &self.events
-        }
+        fn kafka(&self) -> &MockKafkaBackend { &self.kafka }
+        fn events(&self) -> &RecordingEmitter { &self.events }
+        fn chaos(&self) -> &NoopChaos { &self.chaos }
+        fn seeder(&self) -> &NoopSeeder { &self.seeder }
     }
 
     fn test_client(topics: Vec<TopicDetail>) -> Client<TestCtx> {
         Client::new(TestCtx {
             kafka: MockKafkaBackend::with_topics(topics),
             events: RecordingEmitter::default(),
+            chaos: NoopChaos,
+            seeder: NoopSeeder,
         })
     }
 

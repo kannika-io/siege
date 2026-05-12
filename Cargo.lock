@@ -3447,6 +3447,7 @@ dependencies = [
  "siege-api-spec",
  "siege-chaos",
  "siege-kafka",
+ "siege-seed",
  "tokio",
  "tokio-stream",
  "utoipa",
@@ -3480,13 +3481,8 @@ name = "siege-chaos"
 version = "0.1.0"
 dependencies = [
  "rand 0.9.4",
- "rdkafka",
- "serde",
- "serde_json",
  "siege",
- "siege-kafka",
  "thiserror 2.0.18",
- "tokio",
 ]
 
 [[package]]
@@ -3518,6 +3514,13 @@ dependencies = [
  "serde",
  "serde_json",
  "utoipa",
+]
+
+[[package]]
+name = "siege-seed"
+version = "0.1.0"
+dependencies = [
+ "siege",
 ]
 
 [[package]]

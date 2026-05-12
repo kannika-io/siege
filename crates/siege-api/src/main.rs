@@ -2,29 +2,33 @@ mod error;
 mod kafka;
 mod mapping;
 mod routes;
-mod seed;
 mod sse;
 
 use actix_cors::Cors;
 use actix_web::{web, App, HttpServer};
 use clap::Parser;
-use siege::SiegeContext;
+use siege::{SeedBackend, SiegeContext};
 use siege_api_spec::ApiDoc;
 use utoipa::OpenApi;
 use utoipa_swagger_ui::SwaggerUi;
 
 use siege_chaos::ChaosClient;
 use siege_kafka::RdKafkaBackend;
+use siege_seed::Seeder;
 use sse::broadcaster::Broadcaster;
 
-struct Siege {
+pub(crate) struct Siege {
     kafka: RdKafkaBackend,
     events: Broadcaster,
+    chaos: ChaosClient,
+    seeder: Seeder,
 }
 
 impl SiegeContext for Siege {
     type Kafka = RdKafkaBackend;
     type Events = Broadcaster;
+    type Chaos = ChaosClient;
+    type Seeder = Seeder;
 
     fn kafka(&self) -> &RdKafkaBackend {
         &self.kafka
@@ -32,6 +36,14 @@ impl SiegeContext for Siege {
 
     fn events(&self) -> &Broadcaster {
         &self.events
+    }
+
+    fn chaos(&self) -> &ChaosClient {
+        &self.chaos
+    }
+
+    fn seeder(&self) -> &Seeder {
+        &self.seeder
     }
 }
 
@@ -53,10 +65,13 @@ async fn main() -> std::io::Result<()> {
     let cli = Cli::parse();
 
     let backend = RdKafkaBackend::new(&cli.bootstrap_servers);
-    let chaos_client = web::Data::new(ChaosClient::new(&cli.bootstrap_servers));
+    let chaos = ChaosClient::new(backend.clone());
+    let seeder = Seeder::new(backend.clone());
 
     if cli.seed {
-        seed::seed_topics(&backend).await;
+        if let Err(e) = seeder.seed_topics().await {
+            eprintln!("seed error: {e}");
+        }
     }
 
     let broadcaster = Broadcaster::new(256);
@@ -77,6 +92,8 @@ async fn main() -> std::io::Result<()> {
     let client = web::Data::new(siege::client::Client::new(Siege {
         kafka: backend,
         events: broadcaster,
+        chaos,
+        seeder,
     }));
 
     let addr = ("0.0.0.0", cli.port);
@@ -86,7 +103,6 @@ async fn main() -> std::io::Result<()> {
             .wrap(Cors::permissive())
             .app_data(client.clone())
             .app_data(broadcaster_data.clone())
-            .app_data(chaos_client.clone())
             .configure(routes::configure::<Siege>)
             .service(
                 SwaggerUi::new("/swagger-ui/{_:.*}")
@@ -112,5 +128,3 @@ async fn main() -> std::io::Result<()> {
     eprintln!("listening on {}:{}", addr.0, addr.1);
     server.run().await
 }
-
-

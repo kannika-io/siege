@@ -1,8 +1,11 @@
 use std::future::Future;
+use std::pin::Pin;
 
 use siege_kernel::KafkaProperties;
 
 use crate::SiegeError;
+
+pub type BoxFuture<'a, T> = Pin<Box<dyn Future<Output = T> + Send + 'a>>;
 
 #[derive(Debug, Clone, PartialEq)]
 pub struct TopicMeta {
@@ -21,19 +24,33 @@ pub struct TopicDetail {
 }
 
 pub trait KafkaBackend: Send + Sync + 'static {
-    fn list_topics(&self) -> impl Future<Output = Result<Vec<TopicMeta>, SiegeError>> + Send;
-    fn get_topic(&self, name: &str) -> impl Future<Output = Result<TopicDetail, SiegeError>> + Send;
+    fn list_topics(&self) -> BoxFuture<'_, Result<Vec<TopicMeta>, SiegeError>>;
+    fn get_topic(&self, name: &str) -> BoxFuture<'_, Result<TopicDetail, SiegeError>>;
     fn create_topic(
         &self,
         name: &str,
         partitions: i32,
         replication_factor: i32,
         config: KafkaProperties,
-    ) -> impl Future<Output = Result<(), SiegeError>> + Send;
-    fn delete_topic(&self, name: &str) -> impl Future<Output = Result<(), SiegeError>> + Send;
+    ) -> BoxFuture<'_, Result<(), SiegeError>>;
+    fn delete_topic(&self, name: &str) -> BoxFuture<'_, Result<(), SiegeError>>;
     fn update_topic_config(
         &self,
         name: &str,
         config: KafkaProperties,
-    ) -> impl Future<Output = Result<(), SiegeError>> + Send;
+    ) -> BoxFuture<'_, Result<(), SiegeError>>;
+    fn create_partitions(
+        &self,
+        name: &str,
+        total: usize,
+    ) -> BoxFuture<'_, Result<(), SiegeError>>;
+    fn producer(&self) -> Box<dyn KafkaProducer>;
+}
+
+pub trait KafkaProducer: Send + Sync {
+    fn send<'a>(
+        &'a self,
+        topic: &'a str,
+        payload: &'a [u8],
+    ) -> BoxFuture<'a, Result<(), SiegeError>>;
 }

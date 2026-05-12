@@ -102,10 +102,8 @@ mod tests {
 
     use actix_web::http::StatusCode;
     use actix_web::{test, App};
-    use siege::{KafkaProperties, SiegeContext};
     use siege::kafka::TopicDetail;
-
-    use siege::MockKafkaBackend;
+    use siege::{KafkaProperties, MockKafkaBackend, NoopChaos, NoopSeeder, SiegeContext};
     use crate::routes::configure;
     use crate::sse::broadcaster::Broadcaster;
 
@@ -114,25 +112,28 @@ mod tests {
     struct MockContext {
         kafka: MockKafkaBackend,
         events: Broadcaster,
+        chaos: NoopChaos,
+        seeder: NoopSeeder,
     }
 
     impl SiegeContext for MockContext {
         type Kafka = MockKafkaBackend;
         type Events = Broadcaster;
+        type Chaos = NoopChaos;
+        type Seeder = NoopSeeder;
 
-        fn kafka(&self) -> &MockKafkaBackend {
-            &self.kafka
-        }
-
-        fn events(&self) -> &Broadcaster {
-            &self.events
-        }
+        fn kafka(&self) -> &MockKafkaBackend { &self.kafka }
+        fn events(&self) -> &Broadcaster { &self.events }
+        fn chaos(&self) -> &NoopChaos { &self.chaos }
+        fn seeder(&self) -> &NoopSeeder { &self.seeder }
     }
 
     fn mock_ctx(kafka: MockKafkaBackend) -> MockContext {
         MockContext {
             kafka,
             events: Broadcaster::new(16),
+            chaos: NoopChaos,
+            seeder: NoopSeeder,
         }
     }
 

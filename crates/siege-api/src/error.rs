@@ -61,12 +61,3 @@ impl From<siege::SiegeError> for HttpError {
     }
 }
 
-impl From<siege_chaos::ChaosError> for HttpError {
-    fn from(e: siege_chaos::ChaosError) -> Self {
-        match e {
-            siege_chaos::ChaosError::TopicNotFound(s) => Self::not_found(s),
-            siege_chaos::ChaosError::KafkaError(s) => Self::bad_gateway(s),
-            siege_chaos::ChaosError::ProducerError(s) => Self::bad_gateway(s),
-        }
-    }
-}

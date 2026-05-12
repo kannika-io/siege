@@ -1,8 +1,36 @@
 use std::collections::HashMap;
 use std::sync::{Arc, Mutex};
 
-use crate::kafka::{KafkaBackend, TopicDetail, TopicMeta};
+use crate::chaos::ChaosBackend;
+use crate::kafka::{BoxFuture, KafkaBackend, KafkaProducer, TopicDetail, TopicMeta};
+use crate::seed::{SeedBackend, SeedResult};
 use crate::{KafkaProperties, SiegeError};
+
+pub struct NoopChaos;
+
+impl ChaosBackend for NoopChaos {
+    type Error = SiegeError;
+
+    async fn get_topic(&self, name: &str) -> Result<TopicDetail, SiegeError> {
+        Err(SiegeError::TopicNotFound(name.to_owned()))
+    }
+    async fn delete_topic(&self, _topic: &str) -> Result<(), SiegeError> { Ok(()) }
+    async fn zero_retention(&self, _topic: &str) -> Result<(), SiegeError> { Ok(()) }
+    async fn flip_cleanup_policy(&self, _topic: &str) -> Result<(), SiegeError> { Ok(()) }
+    async fn increase_partitions(&self, _topic: &str, _extra: i32) -> Result<(), SiegeError> { Ok(()) }
+    async fn poison_pills(&self, _topic: &str, _count: u32) -> Result<(), SiegeError> { Ok(()) }
+    async fn schema_break(&self, _topic: &str, _count: u32) -> Result<(), SiegeError> { Ok(()) }
+}
+
+pub struct NoopSeeder;
+
+impl SeedBackend for NoopSeeder {
+    type Error = SiegeError;
+
+    async fn seed_topics(&self) -> Result<SeedResult, SiegeError> {
+        Ok(SeedResult { created: vec![], skipped: vec![] })
+    }
+}
 
 #[derive(Clone, Default)]
 pub struct MockKafkaBackend {
@@ -23,7 +51,7 @@ impl MockKafkaBackend {
 }
 
 impl KafkaBackend for MockKafkaBackend {
-    fn list_topics(&self) -> impl Future<Output = Result<Vec<TopicMeta>, SiegeError>> + Send {
+    fn list_topics(&self) -> BoxFuture<'_, Result<Vec<TopicMeta>, SiegeError>> {
         let topics: Vec<TopicMeta> = self
             .topics
             .lock()
@@ -36,13 +64,10 @@ impl KafkaBackend for MockKafkaBackend {
                 config: d.config.clone(),
             })
             .collect();
-        async move { Ok(topics) }
+        Box::pin(async move { Ok(topics) })
     }
 
-    fn get_topic(
-        &self,
-        name: &str,
-    ) -> impl Future<Output = Result<TopicDetail, SiegeError>> + Send {
+    fn get_topic(&self, name: &str) -> BoxFuture<'_, Result<TopicDetail, SiegeError>> {
         let result = self
             .topics
             .lock()
@@ -50,7 +75,7 @@ impl KafkaBackend for MockKafkaBackend {
             .get(name)
             .cloned()
             .ok_or_else(|| SiegeError::TopicNotFound(name.to_owned()));
-        async move { result }
+        Box::pin(async move { result })
     }
 
     fn create_topic(
@@ -59,7 +84,7 @@ impl KafkaBackend for MockKafkaBackend {
         partitions: i32,
         replication_factor: i32,
         config: KafkaProperties,
-    ) -> impl Future<Output = Result<(), SiegeError>> + Send {
+    ) -> BoxFuture<'_, Result<(), SiegeError>> {
         let name = name.to_owned();
         let result = {
             let mut topics = self.topics.lock().unwrap();
@@ -78,10 +103,10 @@ impl KafkaBackend for MockKafkaBackend {
                 Ok(())
             }
         };
-        async move { result }
+        Box::pin(async move { result })
     }
 
-    fn delete_topic(&self, name: &str) -> impl Future<Output = Result<(), SiegeError>> + Send {
+    fn delete_topic(&self, name: &str) -> BoxFuture<'_, Result<(), SiegeError>> {
         let result = {
             let mut topics = self.topics.lock().unwrap();
             if topics.remove(name).is_some() {
@@ -90,14 +115,14 @@ impl KafkaBackend for MockKafkaBackend {
                 Err(SiegeError::TopicNotFound(name.to_owned()))
             }
         };
-        async move { result }
+        Box::pin(async move { result })
     }
 
     fn update_topic_config(
         &self,
         name: &str,
         config: KafkaProperties,
-    ) -> impl Future<Output = Result<(), SiegeError>> + Send {
+    ) -> BoxFuture<'_, Result<(), SiegeError>> {
         let result = {
             let mut topics = self.topics.lock().unwrap();
             match topics.get_mut(name) {
@@ -108,7 +133,35 @@ impl KafkaBackend for MockKafkaBackend {
                 None => Err(SiegeError::TopicNotFound(name.to_owned())),
             }
         };
-        async move { result }
+        Box::pin(async move { result })
+    }
+
+    fn create_partitions(
+        &self,
+        name: &str,
+        total: usize,
+    ) -> BoxFuture<'_, Result<(), SiegeError>> {
+        let result = {
+            let mut topics = self.topics.lock().unwrap();
+            match topics.get_mut(name) {
+                Some(detail) => {
+                    detail.partitions = total as i32;
+                    Ok(())
+                }
+                None => Err(SiegeError::TopicNotFound(name.to_owned())),
+            }
+        };
+        Box::pin(async move { result })
+    }
+
+    fn producer(&self) -> Box<dyn KafkaProducer> {
+        struct NoopProducer;
+        impl KafkaProducer for NoopProducer {
+            fn send<'a>(&'a self, _topic: &'a str, _payload: &'a [u8]) -> BoxFuture<'a, Result<(), SiegeError>> {
+                Box::pin(async { Ok(()) })
+            }
+        }
+        Box::new(NoopProducer)
     }
 }
 

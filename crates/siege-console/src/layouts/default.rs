@@ -1,5 +1,6 @@
 use dioxus::prelude::*;
 
+use crate::components::ui::seed_button::SeedButton;
 use crate::components::ui::theme_toggle::ThemeToggle;
 use crate::routes::Route;
 use crate::state::AppState;
@@ -36,7 +37,10 @@ pub fn Layout() -> Element {
                         NavItem { to: Route::WheelOfChaosPage {}, label: "Wheel of Chaos" }
                     }
 
-                    ThemeToggle {}
+                    div { class: "flex items-center gap-1",
+                        SeedButton {}
+                        ThemeToggle {}
+                    }
                 }
 
                 div { class: "flex-1 bg-surface rounded-xl overflow-hidden flex flex-col border border-border",

@@ -3,44 +3,39 @@ mod payloads;
 
 pub use error::ChaosError;
 
-use rdkafka::admin::{AdminOptions, NewPartitions};
-use siege::KafkaProperties;
-use siege::kafka::KafkaBackend;
-use siege_kafka::{Producer, RdKafkaBackend};
+use siege::kafka::{KafkaBackend, TopicDetail};
+use siege::{ChaosBackend, KafkaProperties};
 
 pub struct ChaosClient {
-    backend: RdKafkaBackend,
-    producer: Producer,
+    backend: Box<dyn KafkaBackend>,
 }
 
 impl ChaosClient {
-    pub fn new(bootstrap_servers: &str) -> Self {
+    pub fn new(backend: impl KafkaBackend) -> Self {
         Self {
-            backend: RdKafkaBackend::new(bootstrap_servers),
-            producer: Producer::new(bootstrap_servers),
+            backend: Box::new(backend),
         }
     }
+}
 
-    pub async fn get_topic(
-        &self,
-        name: &str,
-    ) -> Result<siege::kafka::TopicDetail, ChaosError> {
+impl ChaosBackend for ChaosClient {
+    type Error = ChaosError;
+
+    async fn get_topic(&self, name: &str) -> Result<TopicDetail, ChaosError> {
         Ok(self.backend.get_topic(name).await?)
     }
 
-    pub async fn delete_topic(&self, topic: &str) -> Result<(), ChaosError> {
-        self.backend.delete_topic(topic).await?;
-        Ok(())
+    async fn delete_topic(&self, topic: &str) -> Result<(), ChaosError> {
+        Ok(self.backend.delete_topic(topic).await?)
     }
 
-    pub async fn zero_retention(&self, topic: &str) -> Result<(), ChaosError> {
+    async fn zero_retention(&self, topic: &str) -> Result<(), ChaosError> {
         let config: KafkaProperties =
             std::collections::HashMap::from([("retention.ms".into(), "0".into())]).into();
-        self.backend.update_topic_config(topic, config).await?;
-        Ok(())
+        Ok(self.backend.update_topic_config(topic, config).await?)
     }
 
-    pub async fn flip_cleanup_policy(&self, topic: &str) -> Result<(), ChaosError> {
+    async fn flip_cleanup_policy(&self, topic: &str) -> Result<(), ChaosError> {
         let detail = self.backend.get_topic(topic).await?;
         let current = detail
             .config
@@ -52,49 +47,31 @@ impl ChaosClient {
         } else {
             "compact"
         };
-        let config: KafkaProperties = std::collections::HashMap::from([(
-            "cleanup.policy".into(),
-            new_policy.into(),
-        )])
-        .into();
-        self.backend.update_topic_config(topic, config).await?;
-        Ok(())
+        let config: KafkaProperties =
+            std::collections::HashMap::from([("cleanup.policy".into(), new_policy.into())]).into();
+        Ok(self.backend.update_topic_config(topic, config).await?)
     }
 
-    pub async fn increase_partitions(
-        &self,
-        topic: &str,
-        extra: i32,
-    ) -> Result<(), ChaosError> {
+    async fn increase_partitions(&self, topic: &str, extra: i32) -> Result<(), ChaosError> {
         let detail = self.backend.get_topic(topic).await?;
         let total = (detail.partitions + extra) as usize;
-        let new_parts = NewPartitions::new(topic, total);
-        self.backend
-            .admin()
-            .create_partitions(&[new_parts], &AdminOptions::new())
-            .await
-            .map_err(|e| ChaosError::KafkaError(e.to_string()))?;
-        Ok(())
+        Ok(self.backend.create_partitions(topic, total).await?)
     }
 
-    pub async fn poison_pills(&self, topic: &str, count: u32) -> Result<(), ChaosError> {
+    async fn poison_pills(&self, topic: &str, count: u32) -> Result<(), ChaosError> {
+        let producer = self.backend.producer();
         for _ in 0..count {
             let payload = payloads::poison_pill();
-            self.producer
-                .send(topic, &payload)
-                .await
-                .map_err(|e| ChaosError::ProducerError(e.to_string()))?;
+            producer.send(topic, &payload).await?;
         }
         Ok(())
     }
 
-    pub async fn schema_break(&self, topic: &str, count: u32) -> Result<(), ChaosError> {
+    async fn schema_break(&self, topic: &str, count: u32) -> Result<(), ChaosError> {
+        let producer = self.backend.producer();
         for _ in 0..count {
             let payload = payloads::schema_breaking_json();
-            self.producer
-                .send(topic, &payload)
-                .await
-                .map_err(|e| ChaosError::ProducerError(e.to_string()))?;
+            producer.send(topic, &payload).await?;
         }
         Ok(())
     }

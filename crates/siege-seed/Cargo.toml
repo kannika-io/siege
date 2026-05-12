@@ -1,9 +1,7 @@
 [package]
-name = "siege-chaos"
+name = "siege-seed"
 version.workspace = true
 edition.workspace = true
 
 [dependencies]
 siege.workspace = true
-thiserror.workspace = true
-rand.workspace = true

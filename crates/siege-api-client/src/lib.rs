@@ -83,6 +83,19 @@ impl SiegeClient {
         }
     }
 
+    pub async fn seed(&self) -> Result<(), ClientError> {
+        let resp = self
+            .client
+            .post(format!("{}/api/seed", self.base_url))
+            .send()
+            .await?;
+        if resp.status().is_success() {
+            Ok(())
+        } else {
+            Err(Self::api_error(resp).await)
+        }
+    }
+
     pub async fn delete_topic(&self, name: &str) -> Result<(), ClientError> {
         self.topic(name).delete().await
     }

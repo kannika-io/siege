@@ -1,18 +1,21 @@
-use std::future::Future;
 use std::sync::Arc;
 use std::time::Duration;
 
 use rdkafka::admin::{
-    AdminClient, AdminOptions, AlterConfig, NewTopic, ResourceSpecifier, TopicReplication,
+    AdminClient, AdminOptions, AlterConfig, NewPartitions, NewTopic, ResourceSpecifier,
+    TopicReplication,
 };
 use rdkafka::client::DefaultClientContext;
 use rdkafka::config::ClientConfig;
-use siege::kafka::{KafkaBackend, TopicDetail, TopicMeta};
+use siege::kafka::{BoxFuture, KafkaBackend, KafkaProducer, TopicDetail, TopicMeta};
 use siege::{KafkaProperties, SiegeError};
+
+use crate::Producer;
 
 #[derive(Clone)]
 pub struct RdKafkaBackend {
     admin: Arc<AdminClient<DefaultClientContext>>,
+    bootstrap_servers: String,
 }
 
 impl RdKafkaBackend {
@@ -23,18 +26,15 @@ impl RdKafkaBackend {
             .expect("failed to create Kafka admin client");
         Self {
             admin: Arc::new(admin),
+            bootstrap_servers: bootstrap_servers.to_owned(),
         }
-    }
-
-    pub fn admin(&self) -> &AdminClient<DefaultClientContext> {
-        &self.admin
     }
 }
 
 impl KafkaBackend for RdKafkaBackend {
-    fn list_topics(&self) -> impl Future<Output = Result<Vec<TopicMeta>, SiegeError>> + Send {
+    fn list_topics(&self) -> BoxFuture<'_, Result<Vec<TopicMeta>, SiegeError>> {
         let admin = self.admin.clone();
-        async move {
+        Box::pin(async move {
             let metadata = admin
                 .inner()
                 .fetch_metadata(None, Duration::from_secs(10))
@@ -79,16 +79,13 @@ impl KafkaBackend for RdKafkaBackend {
             }
 
             Ok(topics)
-        }
+        })
     }
 
-    fn get_topic(
-        &self,
-        name: &str,
-    ) -> impl Future<Output = Result<TopicDetail, SiegeError>> + Send {
+    fn get_topic(&self, name: &str) -> BoxFuture<'_, Result<TopicDetail, SiegeError>> {
         let admin = self.admin.clone();
         let name = name.to_owned();
-        async move {
+        Box::pin(async move {
             let metadata = admin
                 .inner()
                 .fetch_metadata(None, Duration::from_secs(10))
@@ -134,7 +131,7 @@ impl KafkaBackend for RdKafkaBackend {
                 replication_factor,
                 config,
             })
-        }
+        })
     }
 
     fn create_topic(
@@ -143,10 +140,10 @@ impl KafkaBackend for RdKafkaBackend {
         partitions: i32,
         replication_factor: i32,
         config: KafkaProperties,
-    ) -> impl Future<Output = Result<(), SiegeError>> + Send {
+    ) -> BoxFuture<'_, Result<(), SiegeError>> {
         let admin = self.admin.clone();
         let name = name.to_owned();
-        async move {
+        Box::pin(async move {
             let mut new_topic = NewTopic::new(
                 &name,
                 partitions,
@@ -168,13 +165,13 @@ impl KafkaBackend for RdKafkaBackend {
             }
 
             Ok(())
-        }
+        })
     }
 
-    fn delete_topic(&self, name: &str) -> impl Future<Output = Result<(), SiegeError>> + Send {
+    fn delete_topic(&self, name: &str) -> BoxFuture<'_, Result<(), SiegeError>> {
         let admin = self.admin.clone();
         let name = name.to_owned();
-        async move {
+        Box::pin(async move {
             let results = admin
                 .delete_topics(&[&name], &AdminOptions::new())
                 .await
@@ -187,17 +184,17 @@ impl KafkaBackend for RdKafkaBackend {
             }
 
             Ok(())
-        }
+        })
     }
 
     fn update_topic_config(
         &self,
         name: &str,
         config: KafkaProperties,
-    ) -> impl Future<Output = Result<(), SiegeError>> + Send {
+    ) -> BoxFuture<'_, Result<(), SiegeError>> {
         let admin = self.admin.clone();
         let name = name.to_owned();
-        async move {
+        Box::pin(async move {
             let mut alter = AlterConfig::new(ResourceSpecifier::Topic(&name));
             for (key, value) in config.iter() {
                 alter = alter.set(key, value);
@@ -215,6 +212,27 @@ impl KafkaBackend for RdKafkaBackend {
             }
 
             Ok(())
-        }
+        })
+    }
+
+    fn producer(&self) -> Box<dyn KafkaProducer> {
+        Box::new(Producer::new(&self.bootstrap_servers))
+    }
+
+    fn create_partitions(
+        &self,
+        name: &str,
+        total: usize,
+    ) -> BoxFuture<'_, Result<(), SiegeError>> {
+        let admin = self.admin.clone();
+        let name = name.to_owned();
+        Box::pin(async move {
+            let new_parts = NewPartitions::new(&name, total);
+            admin
+                .create_partitions(&[new_parts], &AdminOptions::new())
+                .await
+                .map_err(|e| SiegeError::KafkaError(e.to_string()))?;
+            Ok(())
+        })
     }
 }
