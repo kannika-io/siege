@@ -23,6 +23,15 @@ impl Broadcaster {
     }
 }
 
+fn detail_to_resource(d: &siege::kafka::TopicDetail) -> TopicResource {
+    TopicResource {
+        name: d.name.clone(),
+        partitions: d.partitions,
+        replication_factor: d.replication_factor,
+        config: d.config.clone(),
+    }
+}
+
 impl EventEmitter for Broadcaster {
     fn emit(&self, event: &DomainEvent) {
         match event {
@@ -40,6 +49,29 @@ impl EventEmitter for Broadcaster {
                 self.send(SseEvent::TopicDeleted {
                     name: e.name.clone(),
                 });
+            }
+            DomainEvent::TopicsSeeded(e) => {
+                self.send(SseEvent::TopicsSeeded {
+                    topics: e.topics.iter().map(detail_to_resource).collect(),
+                });
+            }
+            DomainEvent::ChaosTopicDeleted(e) => {
+                self.send(SseEvent::ChaosTopicDeleted { topic: e.topic.clone() });
+            }
+            DomainEvent::ChaosRetentionZeroed(e) => {
+                self.send(SseEvent::ChaosRetentionZeroed { topic: detail_to_resource(&e.detail) });
+            }
+            DomainEvent::ChaosCleanupPolicyFlipped(e) => {
+                self.send(SseEvent::ChaosCleanupPolicyFlipped { topic: detail_to_resource(&e.detail) });
+            }
+            DomainEvent::ChaosPartitionsIncreased(e) => {
+                self.send(SseEvent::ChaosPartitionsIncreased { topic: detail_to_resource(&e.detail) });
+            }
+            DomainEvent::ChaosPoisonPillsSent(e) => {
+                self.send(SseEvent::ChaosPoisonPillsSent { topic: e.topic.clone(), count: e.count });
+            }
+            DomainEvent::ChaosSchemaBreakSent(e) => {
+                self.send(SseEvent::ChaosSchemaBreakSent { topic: e.topic.clone(), count: e.count });
             }
         }
     }

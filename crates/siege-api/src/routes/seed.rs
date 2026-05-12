@@ -1,5 +1,5 @@
 use actix_web::{web, HttpResponse};
-use siege::{SeedBackend, SiegeContext};
+use siege::SiegeContext;
 
 use crate::error::HttpError;
 

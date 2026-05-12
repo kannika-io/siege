@@ -12,7 +12,7 @@ pub mod client;
 pub use chaos::ChaosBackend;
 pub use context::*;
 pub use error::*;
-pub use event::{DomainEvent, EventEmitter, TopicCreatedEvent, TopicDeletedEvent};
+pub use event::*;
 pub use mock::{MockKafkaBackend, NoopChaos, NoopSeeder};
 pub use seed::{SeedBackend, SeedResult};
 pub use kafka::{KafkaProducer, BoxFuture};

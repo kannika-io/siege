@@ -10,6 +10,10 @@ pub enum SiegeError {
     TopicAlreadyExists(String),
     #[error("kafka error: {0}")]
     KafkaError(String),
+    #[error("chaos error: {0}")]
+    Chaos(String),
+    #[error("seed error: {0}")]
+    Seed(String),
     #[error("internal error: {0}")]
     Internal(String),
 }

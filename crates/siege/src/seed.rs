@@ -1,6 +1,7 @@
 use std::fmt;
 use std::future::Future;
 
+#[derive(Clone)]
 pub struct SeedResult {
     pub created: Vec<String>,
     pub skipped: Vec<String>,

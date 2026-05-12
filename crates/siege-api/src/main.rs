@@ -65,6 +65,7 @@ async fn main() -> std::io::Result<()> {
     let cli = Cli::parse();
 
     let backend = RdKafkaBackend::new(&cli.bootstrap_servers);
+    let broadcaster = Broadcaster::new(256);
     let chaos = ChaosClient::new(backend.clone());
     let seeder = Seeder::new(backend.clone())
         .topic(TopicSeed::new("kings-landing", 6))
@@ -79,8 +80,6 @@ async fn main() -> std::io::Result<()> {
             eprintln!("seed error: {e}");
         }
     }
-
-    let broadcaster = Broadcaster::new(256);
 
     let watcher_backend = backend.clone();
     let watcher_broadcaster = broadcaster.clone();

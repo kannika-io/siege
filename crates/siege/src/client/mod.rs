@@ -1,7 +1,11 @@
+mod chaos;
+mod seed;
 mod topics;
 
 use crate::SiegeContext;
 
+pub use chaos::Chaos;
+pub use seed::Seed;
 pub use topics::Topics;
 
 pub struct Client<C: SiegeContext> {
@@ -13,12 +17,12 @@ impl<C: SiegeContext> Client<C> {
         Self { ctx }
     }
 
-    pub fn chaos(&self) -> &C::Chaos {
-        self.ctx.chaos()
+    pub fn chaos(&self) -> Chaos<'_, C> {
+        Chaos::new(&self.ctx)
     }
 
-    pub fn seeder(&self) -> &C::Seeder {
-        self.ctx.seeder()
+    pub fn seeder(&self) -> Seed<'_, C> {
+        Seed::new(&self.ctx)
     }
 
     pub fn topics(&self) -> Topics<'_, C> {
@@ -49,6 +53,13 @@ mod tests {
             let name = match event {
                 DomainEvent::TopicCreated(_) => "topic_created",
                 DomainEvent::TopicDeleted(_) => "topic_deleted",
+                DomainEvent::ChaosTopicDeleted(_) => "chaos_topic_deleted",
+                DomainEvent::ChaosRetentionZeroed(_) => "chaos_retention_zeroed",
+                DomainEvent::ChaosCleanupPolicyFlipped(_) => "chaos_cleanup_policy_flipped",
+                DomainEvent::ChaosPartitionsIncreased(_) => "chaos_partitions_increased",
+                DomainEvent::ChaosPoisonPillsSent(_) => "chaos_poison_pills_sent",
+                DomainEvent::ChaosSchemaBreakSent(_) => "chaos_schema_break_sent",
+                DomainEvent::TopicsSeeded(_) => "topics_seeded",
             };
             self.events.lock().unwrap().push(name.to_owned());
         }
