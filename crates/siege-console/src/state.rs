@@ -79,3 +79,49 @@ pub struct TopicsState {
     pub list: Signal<Vec<TopicResource>>,
     pub selected: Signal<Option<TopicDetailResource>>,
 }
+
+impl TopicsState {
+    pub fn set_topics(&mut self, list: Vec<TopicResource>) {
+        if let Ok(mut w) = self.list.try_write() {
+            *w = list;
+        }
+    }
+
+    pub fn upsert_topic(&mut self, topic: TopicResource) {
+        if let Ok(mut w) = self.list.try_write() {
+            if let Some(existing) = w.iter_mut().find(|t| t.name == topic.name) {
+                *existing = topic.clone();
+            } else {
+                w.push(topic.clone());
+            }
+        }
+        if self
+            .selected
+            .try_read()
+            .ok()
+            .and_then(|s| s.as_ref().map(|s| s.name == topic.name))
+            .unwrap_or(false)
+        {
+            if let Ok(mut w) = self.selected.try_write() {
+                *w = Some(topic.into());
+            }
+        }
+    }
+
+    pub fn remove_topic(&mut self, name: &str) {
+        if let Ok(mut w) = self.list.try_write() {
+            w.retain(|t| t.name != name);
+        }
+        if self
+            .selected
+            .try_read()
+            .ok()
+            .and_then(|s| s.as_ref().map(|s| s.name == name))
+            .unwrap_or(false)
+        {
+            if let Ok(mut w) = self.selected.try_write() {
+                *w = None;
+            }
+        }
+    }
+}
