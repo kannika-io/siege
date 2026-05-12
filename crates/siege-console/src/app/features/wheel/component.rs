@@ -99,7 +99,7 @@ pub fn Wheel<T: Clone + PartialEq + 'static>(
                 if !slices.is_empty() {
                     let n = slices.len();
                     let slice_angle = 2.0 * PI / n as f64;
-                    let normalized = (-ang - PI / 2.0).rem_euclid(2.0 * PI);
+                    let normalized = (-ang + slice_angle / 2.0).rem_euclid(2.0 * PI);
                     let idx = (normalized / slice_angle) as usize % n;
                     on_result.call(slices[idx].payload.clone());
                 }
@@ -158,11 +158,13 @@ pub fn Wheel<T: Clone + PartialEq + 'static>(
     };
 
     rsx! {
-        div { class: "flex flex-col items-center select-none",
+        div {
+            class: "flex flex-col items-center select-none",
+            style: "width: min(70vh, 70vw);",
             svg {
                 width: "100%",
                 "viewBox": "0 0 500 500",
-                style: "touch-action: none; max-width: min(80vh, 80vw);",
+                style: "touch-action: none;",
 
                 onpointerdown: {
                     move |e: PointerEvent| {
