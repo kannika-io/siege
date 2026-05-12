@@ -61,8 +61,11 @@ dioxus = { version = "=0.7.5", features = ["web", "router"] }
 
 # WASM
 web-sys = { version = "0.3", features = [
+    "CanvasRenderingContext2d",
+    "Document",
     "DomRect",
     "EventSource",
+    "HtmlCanvasElement",
     "HtmlElement",
     "MessageEvent",
     "MouseEvent",

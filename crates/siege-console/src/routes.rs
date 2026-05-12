@@ -1,5 +1,6 @@
 use dioxus::prelude::*;
 
+use crate::app::features::battlefield::BattlefieldPage;
 use crate::app::features::wheel::WheelOfChaosPage;
 use crate::layouts::default::Layout;
 use crate::pages::topics::TopicsPage;
@@ -11,4 +12,6 @@ pub enum Route {
     TopicsPage {},
     #[route("/wheel")]
     WheelOfChaosPage {},
+    #[route("/battlefield")]
+    BattlefieldPage {},
 }

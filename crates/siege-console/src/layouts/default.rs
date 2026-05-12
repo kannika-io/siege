@@ -35,6 +35,7 @@ pub fn Layout() -> Element {
                     div { class: "flex-1 flex flex-col gap-0.5",
                         NavItem { to: Route::TopicsPage {}, label: "Topics" }
                         NavItem { to: Route::WheelOfChaosPage {}, label: "Wheel of Chaos" }
+                        NavItem { to: Route::BattlefieldPage {}, label: "Battlefield" }
                     }
 
                     div { class: "flex items-center gap-1",
