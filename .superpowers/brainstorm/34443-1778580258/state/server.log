@@ -1,0 +1,5 @@
+{"type":"server-started","port":57600,"host":"127.0.0.1","url_host":"localhost","url":"http://localhost:57600","screen_dir":"/Users/tom/git/kannika/siege/main/.superpowers/brainstorm/34443-1778580258/content","state_dir":"/Users/tom/git/kannika/siege/main/.superpowers/brainstorm/34443-1778580258/state"}
+{"type":"screen-added","file":"/Users/tom/git/kannika/siege/main/.superpowers/brainstorm/34443-1778580258/content/topology-layout.html"}
+{"type":"screen-added","file":"/Users/tom/git/kannika/siege/main/.superpowers/brainstorm/34443-1778580258/content/isometric-map.html"}
+{"type":"screen-added","file":"/Users/tom/git/kannika/siege/main/.superpowers/brainstorm/34443-1778580258/content/waiting.html"}
+{"type":"server-stopped","reason":"idle timeout"}

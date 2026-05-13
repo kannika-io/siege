@@ -1,0 +1,238 @@
+<h2>Isometric Battlefield Map</h2>
+<p class="subtitle">Super Mario World-style overworld — topics as locations on a 3D map</p>
+
+<div class="mockup">
+  <div class="mockup-header">The Battlefield — Isometric Overworld</div>
+  <div class="mockup-body" style="padding: 0; overflow: hidden;">
+    <svg viewBox="0 0 800 500" style="width: 100%; background: #0a0a1a;">
+      <defs>
+        <!-- Grass tile pattern -->
+        <linearGradient id="grass" x1="0" y1="0" x2="0" y2="1">
+          <stop offset="0%" stop-color="#2d5a1e"/>
+          <stop offset="100%" stop-color="#1a3a10"/>
+        </linearGradient>
+        <!-- Lava tile for chaos -->
+        <linearGradient id="lava" x1="0" y1="0" x2="0" y2="1">
+          <stop offset="0%" stop-color="#e94560"/>
+          <stop offset="100%" stop-color="#8b1a2b"/>
+        </linearGradient>
+        <!-- Warning tile -->
+        <linearGradient id="warn" x1="0" y1="0" x2="0" y2="1">
+          <stop offset="0%" stop-color="#e9a545"/>
+          <stop offset="100%" stop-color="#8b6a20"/>
+        </linearGradient>
+        <!-- Path pattern -->
+        <pattern id="dots" width="8" height="8" patternUnits="userSpaceOnUse">
+          <circle cx="4" cy="4" r="1.5" fill="#5a5a3a" opacity="0.6"/>
+        </pattern>
+        <!-- Glow filter -->
+        <filter id="glow-red">
+          <feGaussianBlur stdDeviation="4" result="blur"/>
+          <feFlood flood-color="#e94560" flood-opacity="0.6"/>
+          <feComposite in2="blur" operator="in"/>
+          <feMerge><feMergeNode/><feMergeNode in="SourceGraphic"/></feMerge>
+        </filter>
+        <filter id="glow-green">
+          <feGaussianBlur stdDeviation="3" result="blur"/>
+          <feFlood flood-color="#94e945" flood-opacity="0.3"/>
+          <feComposite in2="blur" operator="in"/>
+          <feMerge><feMergeNode/><feMergeNode in="SourceGraphic"/></feMerge>
+        </filter>
+      </defs>
+
+      <!-- Starfield background -->
+      <circle cx="50" cy="30" r="1" fill="#fff" opacity="0.3"/>
+      <circle cx="150" cy="80" r="0.8" fill="#fff" opacity="0.2"/>
+      <circle cx="680" cy="45" r="1.2" fill="#fff" opacity="0.4"/>
+      <circle cx="400" cy="25" r="0.6" fill="#fff" opacity="0.2"/>
+      <circle cx="720" cy="120" r="1" fill="#fff" opacity="0.3"/>
+      <circle cx="300" cy="60" r="0.7" fill="#fff" opacity="0.25"/>
+      <circle cx="550" cy="40" r="0.9" fill="#fff" opacity="0.35"/>
+
+      <!-- PATHS connecting locations (dotted trails) -->
+      <!-- orders -> payments -->
+      <path d="M 200,180 C 280,170 320,200 370,230" stroke="#5a5a3a" stroke-width="4" fill="none" stroke-dasharray="8,6" opacity="0.7"/>
+      <!-- payments -> users -->
+      <path d="M 430,230 C 480,220 510,240 550,280" stroke="#5a5a3a" stroke-width="4" fill="none" stroke-dasharray="8,6" opacity="0.7"/>
+      <!-- orders -> events -->
+      <path d="M 180,210 C 170,260 180,300 200,340" stroke="#5a5a3a" stroke-width="4" fill="none" stroke-dasharray="8,6" opacity="0.7"/>
+      <!-- events -> logs -->
+      <path d="M 260,360 C 320,370 370,350 410,340" stroke="#5a5a3a" stroke-width="4" fill="none" stroke-dasharray="8,6" opacity="0.7"/>
+      <!-- users -> metrics -->
+      <path d="M 580,310 C 590,340 580,370 560,400" stroke="#5a5a3a" stroke-width="4" fill="none" stroke-dasharray="8,6" opacity="0.7"/>
+      <!-- logs -> metrics -->
+      <path d="M 460,360 C 490,380 510,390 530,400" stroke="#5a5a3a" stroke-width="4" fill="none" stroke-dasharray="8,6" opacity="0.7"/>
+
+      <!-- ===== TOPIC: orders (healthy - castle) ===== -->
+      <g transform="translate(140, 140)" filter="url(#glow-green)">
+        <!-- Isometric base -->
+        <polygon points="50,60 100,35 50,10 0,35" fill="#3a7a28" stroke="#2d5a1e" stroke-width="1.5"/>
+        <polygon points="0,35 0,50 50,75 50,60" fill="#1a3a10"/>
+        <polygon points="100,35 100,50 50,75 50,60" fill="#2a5a18"/>
+        <!-- Castle tower -->
+        <rect x="35" y="15" width="30" height="30" fill="#6a6a5a" stroke="#4a4a3a" rx="2"/>
+        <rect x="33" y="10" width="34" height="8" fill="#7a7a6a" stroke="#4a4a3a" rx="1"/>
+        <!-- Battlements -->
+        <rect x="33" y="6" width="6" height="6" fill="#7a7a6a"/>
+        <rect x="43" y="6" width="6" height="6" fill="#7a7a6a"/>
+        <rect x="53" y="6" width="6" height="6" fill="#7a7a6a"/>
+        <!-- Flag -->
+        <line x1="50" y1="6" x2="50" y2="-8" stroke="#4a4a3a" stroke-width="1.5"/>
+        <polygon points="50,-8 65,-4 50,0" fill="#94e945"/>
+        <!-- Label -->
+        <text x="50" y="90" text-anchor="middle" fill="#94e945" font-size="12" font-weight="bold" font-family="monospace">orders</text>
+        <text x="50" y="102" text-anchor="middle" fill="#6a9a4a" font-size="9" font-family="monospace">healthy</text>
+      </g>
+
+      <!-- ===== TOPIC: payments (UNDER ATTACK - lava/fire) ===== -->
+      <g transform="translate(350, 190)" filter="url(#glow-red)">
+        <!-- Isometric base - lava -->
+        <polygon points="50,60 100,35 50,10 0,35" fill="#8b1a2b" stroke="#e94560" stroke-width="2"/>
+        <polygon points="0,35 0,50 50,75 50,60" fill="#5a1020"/>
+        <polygon points="100,35 100,50 50,75 50,60" fill="#6a1525"/>
+        <!-- Ruined tower -->
+        <rect x="35" y="20" width="30" height="25" fill="#4a3a3a" stroke="#3a2a2a" rx="2"/>
+        <polygon points="35,20 50,12 65,20" fill="#5a4a4a"/>
+        <!-- Fire particles -->
+        <ellipse cx="42" cy="18" rx="5" ry="8" fill="#e94560" opacity="0.7"/>
+        <ellipse cx="55" cy="15" rx="4" ry="10" fill="#ff6b6b" opacity="0.5"/>
+        <ellipse cx="60" cy="20" rx="3" ry="6" fill="#e9a545" opacity="0.6"/>
+        <!-- Skull icon -->
+        <circle cx="50" cy="32" r="6" fill="#e94560" opacity="0.8"/>
+        <text x="50" y="35" text-anchor="middle" fill="#fff" font-size="8">☠</text>
+        <!-- Label -->
+        <text x="50" y="90" text-anchor="middle" fill="#e94560" font-size="12" font-weight="bold" font-family="monospace">payments</text>
+        <text x="50" y="102" text-anchor="middle" fill="#e94560" font-size="9" font-family="monospace">poison pills ×10</text>
+      </g>
+
+      <!-- ===== TOPIC: users (healthy - cottage) ===== -->
+      <g transform="translate(520, 250)" filter="url(#glow-green)">
+        <!-- Isometric base -->
+        <polygon points="45,55 90,30 45,5 0,30" fill="#3a7a28" stroke="#2d5a1e" stroke-width="1.5"/>
+        <polygon points="0,30 0,42 45,67 45,55" fill="#1a3a10"/>
+        <polygon points="90,30 90,42 45,67 45,55" fill="#2a5a18"/>
+        <!-- Small house -->
+        <rect x="25" y="18" width="40" height="22" fill="#8a7a5a" stroke="#6a5a3a" rx="2"/>
+        <polygon points="22,18 45,4 68,18" fill="#a04030" stroke="#803020"/>
+        <!-- Window -->
+        <rect x="38" y="24" width="8" height="8" fill="#e9d545" opacity="0.6" rx="1"/>
+        <!-- Label -->
+        <text x="45" y="82" text-anchor="middle" fill="#94e945" font-size="12" font-weight="bold" font-family="monospace">users</text>
+        <text x="45" y="94" text-anchor="middle" fill="#6a9a4a" font-size="9" font-family="monospace">healthy</text>
+      </g>
+
+      <!-- ===== TOPIC: events (warning - damaged) ===== -->
+      <g transform="translate(160, 300)">
+        <!-- Isometric base - warning -->
+        <polygon points="50,60 100,35 50,10 0,35" fill="#6a5a20" stroke="#e9a545" stroke-width="1.5"/>
+        <polygon points="0,35 0,50 50,75 50,60" fill="#3a3010"/>
+        <polygon points="100,35 100,50 50,75 50,60" fill="#4a3a15"/>
+        <!-- Damaged building -->
+        <rect x="30" y="18" width="40" height="28" fill="#6a6a4a" stroke="#4a4a2a" rx="2"/>
+        <!-- Cracks -->
+        <path d="M 45,18 L 48,28 L 43,35 L 47,46" stroke="#e9a545" stroke-width="1.5" fill="none"/>
+        <!-- Warning sign -->
+        <polygon points="50,8 56,18 44,18" fill="#e9a545"/>
+        <text x="50" y="17" text-anchor="middle" fill="#1a1a2e" font-size="8" font-weight="bold">!</text>
+        <!-- Label -->
+        <text x="50" y="90" text-anchor="middle" fill="#e9a545" font-size="12" font-weight="bold" font-family="monospace">events</text>
+        <text x="50" y="102" text-anchor="middle" fill="#e9a545" font-size="9" font-family="monospace">retention zeroed</text>
+      </g>
+
+      <!-- ===== TOPIC: logs (healthy - watchtower) ===== -->
+      <g transform="translate(390, 310)" filter="url(#glow-green)">
+        <!-- Isometric base -->
+        <polygon points="40,50 80,28 40,5 0,28" fill="#3a7a28" stroke="#2d5a1e" stroke-width="1.5"/>
+        <polygon points="0,28 0,38 40,60 40,50" fill="#1a3a10"/>
+        <polygon points="80,28 80,38 40,60 40,50" fill="#2a5a18"/>
+        <!-- Watchtower -->
+        <rect x="28" y="10" width="24" height="28" fill="#7a7a6a" stroke="#5a5a4a" rx="1"/>
+        <rect x="25" y="5" width="30" height="8" fill="#8a8a7a" rx="1"/>
+        <!-- Torch -->
+        <ellipse cx="58" cy="18" rx="3" ry="5" fill="#e9d545" opacity="0.6"/>
+        <!-- Label -->
+        <text x="40" y="75" text-anchor="middle" fill="#94e945" font-size="12" font-weight="bold" font-family="monospace">logs</text>
+        <text x="40" y="87" text-anchor="middle" fill="#6a9a4a" font-size="9" font-family="monospace">healthy</text>
+      </g>
+
+      <!-- ===== TOPIC: metrics (healthy - windmill) ===== -->
+      <g transform="translate(510, 370)" filter="url(#glow-green)">
+        <!-- Isometric base -->
+        <polygon points="40,50 80,28 40,5 0,28" fill="#3a7a28" stroke="#2d5a1e" stroke-width="1.5"/>
+        <polygon points="0,28 0,38 40,60 40,50" fill="#1a3a10"/>
+        <polygon points="80,28 80,38 40,60 40,50" fill="#2a5a18"/>
+        <!-- Windmill body -->
+        <polygon points="32,8 48,8 46,32 34,32" fill="#c0b090" stroke="#8a7a5a"/>
+        <!-- Blades -->
+        <line x1="40" y1="12" x2="40" y2="-8" stroke="#8a7a5a" stroke-width="2"/>
+        <line x1="40" y1="12" x2="58" y2="18" stroke="#8a7a5a" stroke-width="2"/>
+        <line x1="40" y1="12" x2="22" y2="6" stroke="#8a7a5a" stroke-width="2"/>
+        <line x1="40" y1="12" x2="46" y2="28" stroke="#8a7a5a" stroke-width="2"/>
+        <circle cx="40" cy="12" r="3" fill="#6a5a3a"/>
+        <!-- Label -->
+        <text x="40" y="75" text-anchor="middle" fill="#94e945" font-size="12" font-weight="bold" font-family="monospace">metrics</text>
+        <text x="40" y="87" text-anchor="middle" fill="#6a9a4a" font-size="9" font-family="monospace">healthy</text>
+      </g>
+
+      <!-- ===== CHAOS TOOLBAR (right side) ===== -->
+      <g transform="translate(660, 80)">
+        <rect x="0" y="0" width="120" height="340" rx="8" fill="#16213e" stroke="#0f3460" stroke-width="1.5"/>
+        <text x="60" y="25" text-anchor="middle" fill="#e94560" font-size="13" font-weight="bold" font-family="monospace">⚔ ARSENAL</text>
+
+        <!-- Chaos items (draggable concept) -->
+        <g transform="translate(10, 40)">
+          <rect width="100" height="38" rx="5" fill="#1a1a2e" stroke="#e94560" stroke-width="1" opacity="0.8"/>
+          <text x="12" y="16" fill="#e94560" font-size="10" font-family="monospace">☠ Poison</text>
+          <text x="12" y="30" fill="#7a7a8a" font-size="8" font-family="monospace">Pills</text>
+          <text x="88" y="24" fill="#e94560" font-size="14" cursor="grab">⟐</text>
+        </g>
+
+        <g transform="translate(10, 86)">
+          <rect width="100" height="38" rx="5" fill="#1a1a2e" stroke="#e9a545" stroke-width="1" opacity="0.8"/>
+          <text x="12" y="16" fill="#e9a545" font-size="10" font-family="monospace">⏱ Zero</text>
+          <text x="12" y="30" fill="#7a7a8a" font-size="8" font-family="monospace">Retention</text>
+          <text x="88" y="24" fill="#e9a545" font-size="14" cursor="grab">⟐</text>
+        </g>
+
+        <g transform="translate(10, 132)">
+          <rect width="100" height="38" rx="5" fill="#1a1a2e" stroke="#45b5e9" stroke-width="1" opacity="0.8"/>
+          <text x="12" y="16" fill="#45b5e9" font-size="10" font-family="monospace">🔄 Flip</text>
+          <text x="12" y="30" fill="#7a7a8a" font-size="8" font-family="monospace">Cleanup</text>
+          <text x="88" y="24" fill="#45b5e9" font-size="14" cursor="grab">⟐</text>
+        </g>
+
+        <g transform="translate(10, 178)">
+          <rect width="100" height="38" rx="5" fill="#1a1a2e" stroke="#b545e9" stroke-width="1" opacity="0.8"/>
+          <text x="12" y="16" fill="#b545e9" font-size="10" font-family="monospace">📊 Add</text>
+          <text x="12" y="30" fill="#7a7a8a" font-size="8" font-family="monospace">Partitions</text>
+          <text x="88" y="24" fill="#b545e9" font-size="14" cursor="grab">⟐</text>
+        </g>
+
+        <g transform="translate(10, 224)">
+          <rect width="100" height="38" rx="5" fill="#1a1a2e" stroke="#ff6b6b" stroke-width="1" opacity="0.8"/>
+          <text x="12" y="16" fill="#ff6b6b" font-size="10" font-family="monospace">💥 Schema</text>
+          <text x="12" y="30" fill="#7a7a8a" font-size="8" font-family="monospace">Break</text>
+          <text x="88" y="24" fill="#ff6b6b" font-size="14" cursor="grab">⟐</text>
+        </g>
+
+        <g transform="translate(10, 270)">
+          <rect width="100" height="38" rx="5" fill="#1a1a2e" stroke="#e94560" stroke-width="2" opacity="0.8"/>
+          <text x="12" y="16" fill="#e94560" font-size="10" font-family="monospace">🗑 Delete</text>
+          <text x="12" y="30" fill="#7a7a8a" font-size="8" font-family="monospace">Topic</text>
+          <text x="88" y="24" fill="#e94560" font-size="14" cursor="grab">⟐</text>
+        </g>
+      </g>
+
+      <!-- Title -->
+      <text x="400" y="480" text-anchor="middle" fill="#5a5a6a" font-size="10" font-family="monospace">
+        Drag chaos actions from the arsenal onto topic locations. Watch the battlefield burn.
+      </text>
+    </svg>
+  </div>
+</div>
+
+<div style="margin-top: 20px;">
+  <h3>The Concept</h3>
+  <p>An isometric overworld map — each topic is a <strong>location</strong> (castle, village, tower) connected by dotted paths. Healthy topics are green and thriving. As you drag chaos from the arsenal sidebar, buildings crumble, catch fire, or get swallowed by lava. The map tells the story of your cluster's state at a glance.</p>
+  <p class="subtitle" style="margin-top: 12px;">Does this direction feel right? Any adjustments to the vibe?</p>
+</div>

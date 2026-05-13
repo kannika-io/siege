@@ -26,6 +26,32 @@ pub fn request_animation_frame(cb: &Closure<dyn FnMut(f64)>) {
     }
 }
 
+pub const LOGICAL_W: f64 = 900.0;
+pub const LOGICAL_H: f64 = 550.0;
+
+pub fn canvas_client_size(id: &str) -> (f64, f64) {
+    let Some(doc) = window().and_then(|w| w.document()) else {
+        return (LOGICAL_W, LOGICAL_H);
+    };
+    let Some(el) = doc.get_element_by_id(id) else {
+        return (LOGICAL_W, LOGICAL_H);
+    };
+    let Ok(canvas) = el.dyn_into::<HtmlCanvasElement>() else {
+        return (LOGICAL_W, LOGICAL_H);
+    };
+    let w = canvas.client_width() as f64;
+    let h = canvas.client_height() as f64;
+    if w < 1.0 || h < 1.0 {
+        (LOGICAL_W, LOGICAL_H)
+    } else {
+        (w, h)
+    }
+}
+
+pub fn to_logical(css_x: f64, css_y: f64, client_w: f64, client_h: f64) -> (f64, f64) {
+    (css_x * LOGICAL_W / client_w, css_y * LOGICAL_H / client_h)
+}
+
 pub fn get_canvas(id: &str) -> Option<(HtmlCanvasElement, CanvasRenderingContext2d)> {
     let document = window()?.document()?;
     let el = document.get_element_by_id(id)?;

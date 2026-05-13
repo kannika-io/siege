@@ -1,10 +1,5 @@
-use std::cell::RefCell;
-use std::rc::Rc;
-
 use dioxus::prelude::*;
-use wasm_bindgen::prelude::*;
 
-use super::canvas;
 use super::cooldown::CooldownOverlay;
 use super::state::Weapon;
 
@@ -12,6 +7,7 @@ use super::state::Weapon;
 pub fn ActionBar(
     selected: Option<Weapon>,
     cooldowns: [f64; 2],
+    current_time: f64,
     on_select: EventHandler<Weapon>,
 ) -> Element {
     rsx! {
@@ -20,12 +16,14 @@ pub fn ActionBar(
                 weapon: Weapon::Crossbow,
                 is_selected: selected == Some(Weapon::Crossbow),
                 cooldown_expires: cooldowns[Weapon::Crossbow.slot_index()],
+                current_time,
                 on_click: move |_| on_select.call(Weapon::Crossbow),
             }
             WeaponSlot {
                 weapon: Weapon::Trebuchet,
                 is_selected: selected == Some(Weapon::Trebuchet),
                 cooldown_expires: cooldowns[Weapon::Trebuchet.slot_index()],
+                current_time,
                 on_click: move |_| on_select.call(Weapon::Trebuchet),
             }
         }
@@ -37,44 +35,13 @@ fn WeaponSlot(
     weapon: Weapon,
     is_selected: bool,
     cooldown_expires: f64,
+    current_time: f64,
     on_click: EventHandler<MouseEvent>,
 ) -> Element {
-    let mut tick = use_signal(|| 0u32);
-
-    use_effect(move || {
-        let current_now = canvas::now();
-        if cooldown_expires <= current_now {
-            return;
-        }
-
-        let tick_cb: Rc<RefCell<Option<Closure<dyn FnMut(f64)>>>> =
-            Rc::new(RefCell::new(None));
-        let tick_cb_clone = tick_cb.clone();
-
-        *tick_cb.borrow_mut() = Some(Closure::wrap(Box::new(move |_ts: f64| {
-            let current = canvas::now();
-            tick.set(tick() + 1);
-
-            if current < cooldown_expires {
-                if let Some(inner) = tick_cb_clone.borrow().as_ref() {
-                    canvas::request_animation_frame(inner);
-                }
-            }
-        }) as Box<dyn FnMut(f64)>));
-
-        if let Some(inner) = tick_cb.borrow().as_ref() {
-            canvas::request_animation_frame(inner);
-        }
-
-        std::mem::forget(tick_cb);
-    });
-
-    let _ = tick();
-    let now = canvas::now();
-    let on_cooldown = cooldown_expires > now;
+    let on_cooldown = cooldown_expires > current_time;
     let cooldown_fraction = if on_cooldown {
         let total = weapon.cooldown_ms();
-        let remaining = cooldown_expires - now;
+        let remaining = cooldown_expires - current_time;
         (remaining / total).clamp(0.0, 1.0)
     } else {
         0.0

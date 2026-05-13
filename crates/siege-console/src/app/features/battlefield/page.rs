@@ -37,20 +37,26 @@ pub fn BattlefieldPage() -> Element {
     use_effect(move || {
         let topic_list = topics();
         let names: Vec<String> = topic_list.iter().map(|t| t.name.clone()).collect();
-        buildings.set(build_targets(&names, 900.0, 550.0));
+        buildings.set(build_targets(&names, canvas::LOGICAL_W, canvas::LOGICAL_H));
     });
 
     use_effect(move || {
         canvas::start_render_loop("battlefield-canvas", move |ctx, w, h, timestamp| {
             ctx.clear_rect(0.0, 0.0, w, h);
-            canvas::scene::render_terrain(ctx, w, h);
+            ctx.save();
+            let _ = ctx.scale(w / canvas::LOGICAL_W, h / canvas::LOGICAL_H);
+
+            let lw = canvas::LOGICAL_W;
+            let lh = canvas::LOGICAL_H;
+
+            canvas::scene::render_terrain(ctx, lw, lh);
             canvas::scene::render_buildings(ctx, &buildings());
 
-            render_weapon_positions(ctx, h);
+            render_weapon_positions(ctx, lh);
 
             if let Phase::Aiming { weapon } = phase() {
                 if let Some(target) = aim_target() {
-                    let start = weapon.launch_origin(h);
+                    let start = weapon.launch_origin(lh);
                     let control = canvas::projectile::arc_control_point(start, target);
                     canvas::aiming::render_trajectory_preview(
                         ctx,
@@ -68,6 +74,8 @@ pub fn BattlefieldPage() -> Element {
                 let t = (elapsed / duration).min(1.0);
                 render_active_projectile(ctx, &proj, t);
             }
+
+            ctx.restore();
         });
     });
 
@@ -141,19 +149,17 @@ pub fn BattlefieldPage() -> Element {
                             return;
                         }
                         let coords = e.element_coordinates();
-                        aim_target.set(Some(Point {
-                            x: coords.x,
-                            y: coords.y,
-                        }));
+                        let (cw, ch) = canvas::canvas_client_size("battlefield-canvas");
+                        let (lx, ly) = canvas::to_logical(coords.x, coords.y, cw, ch);
+                        aim_target.set(Some(Point { x: lx, y: ly }));
                         phase.set(Phase::Aiming { weapon });
                     },
                     onmousemove: move |e: MouseEvent| {
                         if let Phase::Aiming { .. } = phase() {
                             let coords = e.element_coordinates();
-                            aim_target.set(Some(Point {
-                                x: coords.x,
-                                y: coords.y,
-                            }));
+                            let (cw, ch) = canvas::canvas_client_size("battlefield-canvas");
+                            let (lx, ly) = canvas::to_logical(coords.x, coords.y, cw, ch);
+                            aim_target.set(Some(Point { x: lx, y: ly }));
                         }
                     },
                     onmouseup: move |e: MouseEvent| {
@@ -161,11 +167,10 @@ pub fn BattlefieldPage() -> Element {
                             return;
                         };
                         let coords = e.element_coordinates();
-                        let end = Point {
-                            x: coords.x,
-                            y: coords.y,
-                        };
-                        let start = weapon.launch_origin(550.0);
+                        let (cw, ch) = canvas::canvas_client_size("battlefield-canvas");
+                        let (lx, ly) = canvas::to_logical(coords.x, coords.y, cw, ch);
+                        let end = Point { x: lx, y: ly };
+                        let start = weapon.launch_origin(canvas::LOGICAL_H);
                         let control = canvas::projectile::arc_control_point(start, end);
 
                         let proj = Projectile {

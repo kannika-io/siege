@@ -84,9 +84,9 @@ console/src/app/features/battlefield/
 ### Aiming
 
 - Click and drag on the canvas to aim
-- Trajectory preview: dotted parabolic curve from weapon to projected landing point
-- Trajectory is a quadratic bezier: weapon position → control point (arc peak) → mouse position
-- Drag distance controls arc height (further = higher arc)
+- Mouse position determines the landing target; the trajectory arc connects the weapon to the cursor
+- Trajectory preview: dotted parabolic curve rendered as a quadratic bezier (weapon → arc peak → cursor)
+- Arc peak height is proportional to the horizontal distance between weapon and cursor
 - Arc color matches the weapon (red-orange for trebuchet, green for crossbow)
 - Press `Escape` or right-click to cancel without firing
 

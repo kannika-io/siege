@@ -1,5 +1,3 @@
-use dioxus::prelude::*;
-
 #[derive(Clone, Copy, Debug, PartialEq)]
 pub struct Point {
     pub x: f64,
@@ -134,41 +132,34 @@ pub fn build_targets(topic_names: &[String], canvas_width: f64, canvas_height: f
         return Vec::new();
     }
 
+    let ground_y = canvas_height * 0.6;
     let start_x = canvas_width * 0.35;
     let end_x = canvas_width * 0.90;
-    let start_y = canvas_height * 0.15;
-    let end_y = canvas_height * 0.75;
 
-    let cols = ((count as f64).sqrt().ceil() as usize).max(1);
-    let rows = (count + cols - 1) / cols;
-
-    let col_gap = if cols > 1 {
-        (end_x - start_x) / (cols - 1) as f64
-    } else {
-        0.0
-    };
-    let row_gap = if rows > 1 {
-        (end_y - start_y) / (rows - 1) as f64
-    } else {
-        0.0
-    };
+    let cols_per_row = ((end_x - start_x) / (BUILDING_WIDTH + 20.0)) as usize;
+    let cols_per_row = cols_per_row.max(1).min(count);
+    let rows = (count + cols_per_row - 1) / cols_per_row;
 
     topic_names
         .iter()
         .enumerate()
         .map(|(i, name)| {
-            let col = i % cols;
-            let row = i / cols;
-            let cx = if cols > 1 {
-                start_x + col as f64 * col_gap
+            let col = i % cols_per_row;
+            let row = i / cols_per_row;
+
+            let cols_in_this_row = if row == rows - 1 {
+                let remaining = count - row * cols_per_row;
+                remaining.min(cols_per_row)
             } else {
-                (start_x + end_x) / 2.0
+                cols_per_row
             };
-            let cy = if rows > 1 {
-                start_y + row as f64 * row_gap
-            } else {
-                (start_y + end_y) / 2.0
-            };
+
+            let row_width = cols_in_this_row as f64 * (BUILDING_WIDTH + 20.0) - 20.0;
+            let row_start = start_x + ((end_x - start_x) - row_width) / 2.0;
+            let cx = row_start + col as f64 * (BUILDING_WIDTH + 20.0) + BUILDING_WIDTH / 2.0;
+
+            let base_y = ground_y - row as f64 * (BUILDING_HEIGHT + 15.0);
+            let cy = base_y - BUILDING_HEIGHT / 2.0;
 
             let position = Point { x: cx, y: cy };
             let hitbox = Rect {

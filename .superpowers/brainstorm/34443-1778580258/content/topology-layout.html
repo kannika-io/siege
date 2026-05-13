@@ -1,0 +1,86 @@
+<h2>Battlefield Topology Layout</h2>
+<p class="subtitle">How should topics be arranged on the battlefield?</p>
+
+<div class="cards">
+  <div class="card" data-choice="grid" onclick="toggleSelect(this)">
+    <div class="card-image">
+      <div style="padding: 20px; background: #1a1a2e; border-radius: 8px;">
+        <div style="display: grid; grid-template-columns: repeat(4, 1fr); gap: 12px;">
+          <div style="background: #16213e; border: 1px solid #0f3460; border-radius: 6px; padding: 10px; text-align: center; font-size: 11px; color: #e94560;">orders</div>
+          <div style="background: #16213e; border: 1px solid #0f3460; border-radius: 6px; padding: 10px; text-align: center; font-size: 11px; color: #94e945;">payments</div>
+          <div style="background: #16213e; border: 1px solid #0f3460; border-radius: 6px; padding: 10px; text-align: center; font-size: 11px; color: #94e945;">users</div>
+          <div style="background: #16213e; border: 1px solid #e94560; border-radius: 6px; padding: 10px; text-align: center; font-size: 11px; color: #e94560; box-shadow: 0 0 8px rgba(233,69,96,0.4);">events</div>
+          <div style="background: #16213e; border: 1px solid #0f3460; border-radius: 6px; padding: 10px; text-align: center; font-size: 11px; color: #94e945;">logs</div>
+          <div style="background: #16213e; border: 1px solid #e9a545; border-radius: 6px; padding: 10px; text-align: center; font-size: 11px; color: #e9a545;">metrics</div>
+          <div style="background: #16213e; border: 1px solid #0f3460; border-radius: 6px; padding: 10px; text-align: center; font-size: 11px; color: #94e945;">audit</div>
+          <div style="background: #16213e; border: 1px solid #0f3460; border-radius: 6px; padding: 10px; text-align: center; font-size: 11px; color: #94e945;">alerts</div>
+        </div>
+      </div>
+    </div>
+    <div class="card-body">
+      <h3>Grid Layout</h3>
+      <p>Clean rows and columns. Easy to scan, scales well. Color-coded by chaos state. Simple but effective.</p>
+    </div>
+  </div>
+
+  <div class="card" data-choice="hex" onclick="toggleSelect(this)">
+    <div class="card-image">
+      <div style="padding: 20px; background: #1a1a2e; border-radius: 8px;">
+        <svg viewBox="0 0 320 200" style="width: 100%;">
+          <!-- Row 1 -->
+          <g transform="translate(80,45)">
+            <polygon points="30,0 60,17 60,52 30,69 0,52 0,17" fill="#16213e" stroke="#0f3460" stroke-width="1.5"/>
+            <text x="30" y="40" text-anchor="middle" fill="#94e945" font-size="9">orders</text>
+          </g>
+          <g transform="translate(150,45)">
+            <polygon points="30,0 60,17 60,52 30,69 0,52 0,17" fill="#16213e" stroke="#e94560" stroke-width="2"/>
+            <text x="30" y="40" text-anchor="middle" fill="#e94560" font-size="9">payments</text>
+            <circle cx="30" cy="12" r="4" fill="#e94560" opacity="0.8"/>
+          </g>
+          <g transform="translate(220,45)">
+            <polygon points="30,0 60,17 60,52 30,69 0,52 0,17" fill="#16213e" stroke="#0f3460" stroke-width="1.5"/>
+            <text x="30" y="40" text-anchor="middle" fill="#94e945" font-size="9">users</text>
+          </g>
+          <!-- Row 2 offset -->
+          <g transform="translate(45,105)">
+            <polygon points="30,0 60,17 60,52 30,69 0,52 0,17" fill="#16213e" stroke="#e9a545" stroke-width="2"/>
+            <text x="30" y="40" text-anchor="middle" fill="#e9a545" font-size="9">events</text>
+          </g>
+          <g transform="translate(115,105)">
+            <polygon points="30,0 60,17 60,52 30,69 0,52 0,17" fill="#16213e" stroke="#0f3460" stroke-width="1.5"/>
+            <text x="30" y="40" text-anchor="middle" fill="#94e945" font-size="9">logs</text>
+          </g>
+          <g transform="translate(185,105)">
+            <polygon points="30,0 60,17 60,52 30,69 0,52 0,17" fill="#16213e" stroke="#0f3460" stroke-width="1.5"/>
+            <text x="30" y="40" text-anchor="middle" fill="#94e945" font-size="9">metrics</text>
+          </g>
+          <g transform="translate(255,105)">
+            <polygon points="30,0 60,17 60,52 30,69 0,52 0,17" fill="#16213e" stroke="#e94560" stroke-width="2"/>
+            <text x="30" y="40" text-anchor="middle" fill="#e94560" font-size="9">audit</text>
+            <circle cx="30" cy="12" r="4" fill="#e94560" opacity="0.8"/>
+          </g>
+        </svg>
+      </div>
+    </div>
+    <div class="card-body">
+      <h3>Hex Map</h3>
+      <p>Honeycomb layout — feels like a tactical war map. Each hex is a topic, glowing with chaos indicators. Looks great but trickier to implement.</p>
+    </div>
+  </div>
+
+  <div class="card" data-choice="freeform" onclick="toggleSelect(this)">
+    <div class="card-image">
+      <div style="padding: 20px; background: #1a1a2e; border-radius: 8px; position: relative; min-height: 160px;">
+        <div style="position: absolute; top: 15px; left: 30px; background: #16213e; border: 1px solid #94e945; border-radius: 50%; width: 55px; height: 55px; display: flex; align-items: center; justify-content: center; font-size: 9px; color: #94e945;">orders</div>
+        <div style="position: absolute; top: 60px; left: 130px; background: #16213e; border: 2px solid #e94560; border-radius: 50%; width: 65px; height: 65px; display: flex; align-items: center; justify-content: center; font-size: 9px; color: #e94560; box-shadow: 0 0 12px rgba(233,69,96,0.5);">payments</div>
+        <div style="position: absolute; top: 10px; right: 40px; background: #16213e; border: 1px solid #0f3460; border-radius: 50%; width: 50px; height: 50px; display: flex; align-items: center; justify-content: center; font-size: 9px; color: #94e945;">users</div>
+        <div style="position: absolute; bottom: 15px; left: 60px; background: #16213e; border: 1px solid #e9a545; border-radius: 50%; width: 45px; height: 45px; display: flex; align-items: center; justify-content: center; font-size: 8px; color: #e9a545;">events</div>
+        <div style="position: absolute; bottom: 20px; right: 60px; background: #16213e; border: 1px solid #0f3460; border-radius: 50%; width: 58px; height: 58px; display: flex; align-items: center; justify-content: center; font-size: 9px; color: #94e945;">logs</div>
+      </div>
+    </div>
+    <div class="card-body">
+      <h3>Free-form Constellation</h3>
+      <p>Organic node layout — topics float as bubbles, maybe sized by partition count. Most visually striking but positions are arbitrary unless you add physics/force layout.</p>
+    </div>
+  </div>
+</div>

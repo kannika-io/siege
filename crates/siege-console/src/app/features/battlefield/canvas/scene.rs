@@ -72,48 +72,43 @@ pub fn render_terrain(ctx: &CanvasRenderingContext2d, width: f64, height: f64) {
     ctx.set_fill_style_str("#2d5a1e");
     ctx.fill_rect(0.0, ground_line, width, height - ground_line);
 
-    // --- Dithered grass texture (checkerboard dark/light green) ---
-    let ground_top = ground_line;
-    let dark_green = "#2d5a1e";
-    let light_green = "#3a7a28";
-    let mut gy = snap(ground_top);
+    // --- Grass texture: horizontal stripes instead of per-pixel dithering ---
+    ctx.set_fill_style_str("#3a7a28");
+    let mut gy = snap(ground_line);
     while gy < height {
-        let mut gx = 0.0;
-        while gx < width {
-            let grid_x = (gx / PX) as i32;
-            let grid_y = (gy / PX) as i32;
-            let color = if (grid_x + grid_y) % 2 == 0 {
-                dark_green
-            } else {
-                light_green
-            };
-            px(ctx, gx, gy, PX, color);
-            gx += PX;
+        let grid_y = (gy / PX) as i32;
+        if grid_y % 2 == 0 {
+            ctx.fill_rect(0.0, gy, width, PX);
         }
         gy += PX;
     }
 
-    // --- Dirt path in the middle ---
+    // --- Scattered grass tufts for texture ---
+    let tuft_cols = (width / 24.0) as i32;
+    let tuft_rows = ((height - ground_line) / 20.0) as i32;
+    for row in 0..tuft_rows {
+        for col in 0..tuft_cols {
+            let h = hash_xy(col + 100, row + 200);
+            if h % 5 == 0 {
+                let gx = snap((col as f64) * 24.0 + (h % 15) as f64);
+                let gy_pos = snap(ground_line + (row as f64) * 20.0 + ((h >> 4) % 13) as f64);
+                px(ctx, gx, gy_pos, PX, "#4a9a35");
+            }
+        }
+    }
+
+    // --- Dirt path ---
     let path_x = snap(width * 0.28);
     let path_w = PX * 4.0;
-    let dirt_dark = "#6b4f12";
-    let dirt_light = "#8b6914";
-    let mut py = snap(ground_top);
+    ctx.set_fill_style_str("#6b4f12");
+    ctx.fill_rect(path_x, ground_line, path_w, height - ground_line);
+    ctx.set_fill_style_str("#8b6914");
+    let mut py = snap(ground_line);
     while py < height {
         let grid_y = (py / PX) as i32;
-        // Slight wobble
-        let wobble = if grid_y % 3 == 0 { PX } else { 0.0 };
-        let mut px_x = path_x + wobble;
-        let end_x = path_x + path_w + wobble;
-        while px_x < end_x {
-            let grid_x = (px_x / PX) as i32;
-            let c = if (grid_x + grid_y) % 2 == 0 {
-                dirt_dark
-            } else {
-                dirt_light
-            };
-            px(ctx, px_x, py, PX, c);
-            px_x += PX;
+        if grid_y % 2 == 0 {
+            let wobble = if grid_y % 6 < 3 { PX } else { 0.0 };
+            ctx.fill_rect(path_x + wobble, py, path_w, PX);
         }
         py += PX;
     }
