@@ -55,16 +55,21 @@ pub fn BattlefieldPage() -> Element {
             render_weapon_positions(ctx, lh);
 
             if let Phase::Aiming { weapon } = phase() {
-                if let Some(target) = aim_target() {
-                    let start = weapon.launch_origin(lh);
-                    let control = canvas::projectile::arc_control_point(start, target);
-                    canvas::aiming::render_trajectory_preview(
-                        ctx,
-                        start,
-                        control,
-                        target,
-                        weapon.projectile_color(),
-                    );
+                if let Some(mouse_pos) = aim_target() {
+                    let origin = weapon.launch_origin(lh);
+                    if let Some(target) = compute_launch_target(origin, mouse_pos) {
+                        let control = canvas::projectile::arc_control_point(origin, target);
+                        let power = pull_power(origin, mouse_pos);
+                        canvas::aiming::render_aiming_preview(
+                            ctx,
+                            origin,
+                            mouse_pos,
+                            target,
+                            control,
+                            weapon.projectile_color(),
+                            power,
+                        );
+                    }
                 }
             }
 
@@ -169,8 +174,13 @@ pub fn BattlefieldPage() -> Element {
                         let coords = e.element_coordinates();
                         let (cw, ch) = canvas::canvas_client_size("battlefield-canvas");
                         let (lx, ly) = canvas::to_logical(coords.x, coords.y, cw, ch);
-                        let end = Point { x: lx, y: ly };
+                        let mouse_pos = Point { x: lx, y: ly };
                         let start = weapon.launch_origin(canvas::LOGICAL_H);
+                        let Some(end) = compute_launch_target(start, mouse_pos) else {
+                            phase.set(Phase::Idle);
+                            aim_target.set(None);
+                            return;
+                        };
                         let control = canvas::projectile::arc_control_point(start, end);
 
                         let proj = Projectile {

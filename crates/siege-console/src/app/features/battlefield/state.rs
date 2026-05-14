@@ -126,6 +126,34 @@ pub const BUILDING_WIDTH: f64 = 60.0;
 pub const BUILDING_HEIGHT: f64 = 80.0;
 pub const HITBOX_PADDING: f64 = 10.0;
 
+const MAX_PULL: f64 = 150.0;
+const MAX_RANGE: f64 = 800.0;
+const MIN_PULL: f64 = 10.0;
+
+pub fn compute_launch_target(origin: Point, mouse: Point) -> Option<Point> {
+    let dx = origin.x - mouse.x;
+    let dy = origin.y - mouse.y;
+    let pull_dist = (dx * dx + dy * dy).sqrt();
+    if pull_dist < MIN_PULL {
+        return None;
+    }
+    let power = (pull_dist / MAX_PULL).min(1.0);
+    let range = power * MAX_RANGE;
+    let nx = dx / pull_dist;
+    let ny = dy / pull_dist;
+    Some(Point {
+        x: origin.x + nx * range,
+        y: origin.y + ny * range,
+    })
+}
+
+pub fn pull_power(origin: Point, mouse: Point) -> f64 {
+    let dx = origin.x - mouse.x;
+    let dy = origin.y - mouse.y;
+    let pull_dist = (dx * dx + dy * dy).sqrt();
+    (pull_dist / MAX_PULL).min(1.0)
+}
+
 pub fn build_targets(topic_names: &[String], canvas_width: f64, canvas_height: f64) -> Vec<BuildingTarget> {
     let count = topic_names.len();
     if count == 0 {
