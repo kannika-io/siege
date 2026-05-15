@@ -1,0 +1,14 @@
+[package]
+name = "siege-schema-registry"
+version.workspace = true
+edition.workspace = true
+
+[dependencies]
+siege.workspace = true
+reqwest.workspace = true
+serde.workspace = true
+serde_json.workspace = true
+
+[dev-dependencies]
+tokio = { workspace = true, features = ["test-util", "macros"] }
+mockito = "1"
