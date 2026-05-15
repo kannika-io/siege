@@ -14,6 +14,8 @@ pub enum SiegeError {
     Chaos(String),
     #[error("seed error: {0}")]
     Seed(String),
+    #[error("schema registry error: {0}")]
+    SchemaRegistry(String),
     #[error("internal error: {0}")]
     Internal(String),
 }

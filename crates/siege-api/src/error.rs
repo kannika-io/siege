@@ -58,6 +58,7 @@ impl From<siege::SiegeError> for HttpError {
             siege::SiegeError::KafkaError(s) => Self::bad_gateway(s),
             siege::SiegeError::Chaos(s) => Self::bad_gateway(s),
             siege::SiegeError::Seed(s) => Self::bad_gateway(s),
+            siege::SiegeError::SchemaRegistry(s) => Self::bad_gateway(s),
             siege::SiegeError::Internal(s) => Self::internal(s),
         }
     }
