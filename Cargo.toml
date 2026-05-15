@@ -10,6 +10,7 @@ members = [
     "crates/siege-kafka",
     "crates/siege-chaos",
     "crates/siege-seed",
+    "crates/siege-seed-avsc",
     "crates/siege-schema-registry",
 ]
 
@@ -26,6 +27,7 @@ siege-api-client = { path = "crates/siege-api-client" }
 siege-kafka = { path = "crates/siege-kafka" }
 siege-chaos = { path = "crates/siege-chaos" }
 siege-seed = { path = "crates/siege-seed" }
+siege-seed-avsc = { path = "crates/siege-seed-avsc" }
 siege-schema-registry = { path = "crates/siege-schema-registry" }
 apache-avro = "0.17"
 fake = { version = "5", features = ["derive"] }
