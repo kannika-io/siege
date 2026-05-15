@@ -103,7 +103,7 @@ mod tests {
     use actix_web::http::StatusCode;
     use actix_web::{test, App};
     use siege::kafka::TopicDetail;
-    use siege::{KafkaProperties, MockKafkaBackend, NoopChaos, NoopSeeder, SiegeContext};
+    use siege::{KafkaProperties, MockKafkaBackend, NoopChaos, NoopSchemaRegistry, NoopSeeder, SiegeContext};
     use crate::routes::configure;
     use crate::sse::broadcaster::Broadcaster;
 
@@ -114,6 +114,7 @@ mod tests {
         events: Broadcaster,
         chaos: NoopChaos,
         seeder: NoopSeeder,
+        schema_registry: NoopSchemaRegistry,
     }
 
     impl SiegeContext for MockContext {
@@ -121,11 +122,13 @@ mod tests {
         type Events = Broadcaster;
         type Chaos = NoopChaos;
         type Seeder = NoopSeeder;
+        type SchemaRegistry = NoopSchemaRegistry;
 
         fn kafka(&self) -> &MockKafkaBackend { &self.kafka }
         fn events(&self) -> &Broadcaster { &self.events }
         fn chaos(&self) -> &NoopChaos { &self.chaos }
         fn seeder(&self) -> &NoopSeeder { &self.seeder }
+        fn schema_registry(&self) -> &NoopSchemaRegistry { &self.schema_registry }
     }
 
     fn mock_ctx(kafka: MockKafkaBackend) -> MockContext {
@@ -134,6 +137,7 @@ mod tests {
             events: Broadcaster::new(16),
             chaos: NoopChaos,
             seeder: NoopSeeder,
+            schema_registry: NoopSchemaRegistry,
         }
     }
 

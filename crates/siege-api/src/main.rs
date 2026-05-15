@@ -7,8 +7,11 @@ mod sse;
 use actix_cors::Cors;
 use actix_web::{web, App, HttpServer};
 use clap::Parser;
-use siege::{SeedBackend, SiegeContext};
+use siege::schema_registry::SchemaRegistryBackend;
+use siege::{BoxFuture, NoopSchemaRegistry, SchemaId, SeedBackend, SiegeContext, SiegeError};
 use siege_api_spec::ApiDoc;
+use siege_schema_registry::SchemaRegistryClient;
+use siege_seed::avsc;
 use utoipa::OpenApi;
 use utoipa_swagger_ui::SwaggerUi;
 
@@ -17,11 +20,40 @@ use siege_kafka::RdKafkaBackend;
 use siege_seed::{Seeder, TopicSeed};
 use sse::broadcaster::Broadcaster;
 
+pub(crate) enum SchemaRegistryChoice {
+    Real(SchemaRegistryClient),
+    Noop(NoopSchemaRegistry),
+}
+
+impl SchemaRegistryBackend for SchemaRegistryChoice {
+    fn register_schema(
+        &self,
+        subject: &str,
+        schema: &str,
+    ) -> BoxFuture<'_, Result<SchemaId, SiegeError>> {
+        match self {
+            Self::Real(inner) => inner.register_schema(subject, schema),
+            Self::Noop(inner) => inner.register_schema(subject, schema),
+        }
+    }
+
+    fn delete_subject(
+        &self,
+        subject: &str,
+    ) -> BoxFuture<'_, Result<(), SiegeError>> {
+        match self {
+            Self::Real(inner) => inner.delete_subject(subject),
+            Self::Noop(inner) => inner.delete_subject(subject),
+        }
+    }
+}
+
 pub(crate) struct Siege {
     kafka: RdKafkaBackend,
     events: Broadcaster,
     chaos: ChaosClient,
     seeder: Seeder,
+    schema_registry: SchemaRegistryChoice,
 }
 
 impl SiegeContext for Siege {
@@ -29,6 +61,7 @@ impl SiegeContext for Siege {
     type Events = Broadcaster;
     type Chaos = ChaosClient;
     type Seeder = Seeder;
+    type SchemaRegistry = SchemaRegistryChoice;
 
     fn kafka(&self) -> &RdKafkaBackend {
         &self.kafka
@@ -45,6 +78,10 @@ impl SiegeContext for Siege {
     fn seeder(&self) -> &Seeder {
         &self.seeder
     }
+
+    fn schema_registry(&self) -> &SchemaRegistryChoice {
+        &self.schema_registry
+    }
 }
 
 #[derive(Parser)]
@@ -58,6 +95,9 @@ struct Cli {
 
     #[arg(long, default_value = "false")]
     seed: bool,
+
+    #[arg(long)]
+    schema_registry_url: Option<String>,
 }
 
 #[actix_web::main]
@@ -67,13 +107,48 @@ async fn main() -> std::io::Result<()> {
     let backend = RdKafkaBackend::new(&cli.bootstrap_servers);
     let broadcaster = Broadcaster::new(256);
     let chaos = ChaosClient::new(backend.clone());
-    let seeder = Seeder::new(backend.clone())
-        .topic(TopicSeed::new("kings-landing", 6))
-        .topic(TopicSeed::new("winterfell", 3))
-        .topic(TopicSeed::new("the-wall", 1))
-        .topic(TopicSeed::new("iron-islands", 3))
-        .topic(TopicSeed::new("dragonstone", 3))
-        .topic(TopicSeed::new("the-citadel", 1).config("cleanup.policy", "compact"));
+
+    let schema_registry_choice = match cli.schema_registry_url {
+        Some(ref url) => SchemaRegistryChoice::Real(SchemaRegistryClient::new(url)),
+        None => SchemaRegistryChoice::Noop(NoopSchemaRegistry),
+    };
+
+    let mut seeder = Seeder::new(backend.clone())
+        .topic(
+            TopicSeed::new("kings-landing", 6)
+                .schema(avsc!("../../schemas/kings-landing.avsc"))
+                .records(100),
+        )
+        .topic(
+            TopicSeed::new("winterfell", 3)
+                .schema(avsc!("../../schemas/winterfell.avsc"))
+                .records(100),
+        )
+        .topic(
+            TopicSeed::new("the-wall", 1)
+                .schema(avsc!("../../schemas/the-wall.avsc"))
+                .records(50),
+        )
+        .topic(
+            TopicSeed::new("iron-islands", 3)
+                .schema(avsc!("../../schemas/iron-islands.avsc"))
+                .records(100),
+        )
+        .topic(
+            TopicSeed::new("dragonstone", 3)
+                .schema(avsc!("../../schemas/dragonstone.avsc"))
+                .records(100),
+        )
+        .topic(
+            TopicSeed::new("the-citadel", 1)
+                .config("cleanup.policy", "compact")
+                .schema(avsc!("../../schemas/the-citadel.avsc"))
+                .records(50),
+        );
+
+    if let Some(ref url) = cli.schema_registry_url {
+        seeder = seeder.schema_registry(SchemaRegistryClient::new(url));
+    }
 
     if cli.seed {
         if let Err(e) = seeder.seed_topics().await {
@@ -99,6 +174,7 @@ async fn main() -> std::io::Result<()> {
         events: broadcaster,
         chaos,
         seeder,
+        schema_registry: schema_registry_choice,
     }));
 
     let addr = ("0.0.0.0", cli.port);

@@ -29,9 +29,12 @@ impl ChaosBackend for ChaosClient {
         Ok(self.backend.delete_topic(topic).await?)
     }
 
-    async fn zero_retention(&self, topic: &str) -> Result<(), ChaosError> {
-        let config: KafkaProperties =
-            std::collections::HashMap::from([("retention.ms".into(), "0".into())]).into();
+    async fn low_retention(&self, topic: &str) -> Result<(), ChaosError> {
+        let config: KafkaProperties = std::collections::HashMap::from([
+            ("retention.ms".into(), "1".into()),
+            ("segment.ms".into(), "1".into()),
+        ])
+        .into();
         Ok(self.backend.update_topic_config(topic, config).await?)
     }
 
@@ -62,7 +65,7 @@ impl ChaosBackend for ChaosClient {
         let producer = self.backend.producer();
         for _ in 0..count {
             let payload = payloads::poison_pill();
-            producer.send(topic, &payload).await?;
+            producer.send(topic, None, &payload).await?;
         }
         Ok(())
     }
@@ -71,7 +74,7 @@ impl ChaosBackend for ChaosClient {
         let producer = self.backend.producer();
         for _ in 0..count {
             let payload = payloads::schema_breaking_json();
-            producer.send(topic, &payload).await?;
+            producer.send(topic, None, &payload).await?;
         }
         Ok(())
     }

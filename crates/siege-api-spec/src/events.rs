@@ -12,7 +12,7 @@ pub enum SseEvent {
     TopicDeleted { name: String },
     TopicsSeeded { topics: Vec<TopicResource> },
     ChaosTopicDeleted { topic: String },
-    ChaosRetentionZeroed { topic: TopicResource },
+    ChaosRetentionLowered { topic: TopicResource },
     ChaosCleanupPolicyFlipped { topic: TopicResource },
     ChaosPartitionsIncreased { topic: TopicResource },
     ChaosPoisonPillsSent { topic: String, count: u32 },

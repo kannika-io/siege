@@ -58,8 +58,8 @@ impl EventEmitter for Broadcaster {
             DomainEvent::ChaosTopicDeleted(e) => {
                 self.send(SseEvent::ChaosTopicDeleted { topic: e.topic.clone() });
             }
-            DomainEvent::ChaosRetentionZeroed(e) => {
-                self.send(SseEvent::ChaosRetentionZeroed { topic: detail_to_resource(&e.detail) });
+            DomainEvent::ChaosRetentionLowered(e) => {
+                self.send(SseEvent::ChaosRetentionLowered { topic: detail_to_resource(&e.detail) });
             }
             DomainEvent::ChaosCleanupPolicyFlipped(e) => {
                 self.send(SseEvent::ChaosCleanupPolicyFlipped { topic: detail_to_resource(&e.detail) });

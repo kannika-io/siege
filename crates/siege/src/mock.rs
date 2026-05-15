@@ -3,6 +3,7 @@ use std::sync::{Arc, Mutex};
 
 use crate::chaos::ChaosBackend;
 use crate::kafka::{BoxFuture, KafkaBackend, KafkaProducer, TopicDetail, TopicMeta};
+use crate::schema_registry::{SchemaId, SchemaRegistryBackend};
 use crate::seed::{SeedBackend, SeedResult};
 use crate::{KafkaProperties, SiegeError};
 
@@ -15,7 +16,7 @@ impl ChaosBackend for NoopChaos {
         Err(SiegeError::TopicNotFound(name.to_owned()))
     }
     async fn delete_topic(&self, _topic: &str) -> Result<(), SiegeError> { Ok(()) }
-    async fn zero_retention(&self, _topic: &str) -> Result<(), SiegeError> { Ok(()) }
+    async fn low_retention(&self, _topic: &str) -> Result<(), SiegeError> { Ok(()) }
     async fn flip_cleanup_policy(&self, _topic: &str) -> Result<(), SiegeError> { Ok(()) }
     async fn increase_partitions(&self, _topic: &str, _extra: i32) -> Result<(), SiegeError> { Ok(()) }
     async fn poison_pills(&self, _topic: &str, _count: u32) -> Result<(), SiegeError> { Ok(()) }
@@ -29,6 +30,25 @@ impl SeedBackend for NoopSeeder {
 
     async fn seed_topics(&self) -> Result<SeedResult, SiegeError> {
         Ok(SeedResult { created: vec![], skipped: vec![] })
+    }
+}
+
+pub struct NoopSchemaRegistry;
+
+impl SchemaRegistryBackend for NoopSchemaRegistry {
+    fn register_schema(
+        &self,
+        _subject: &str,
+        _schema: &str,
+    ) -> BoxFuture<'_, Result<SchemaId, SiegeError>> {
+        Box::pin(async { Ok(SchemaId(1)) })
+    }
+
+    fn delete_subject(
+        &self,
+        _subject: &str,
+    ) -> BoxFuture<'_, Result<(), SiegeError>> {
+        Box::pin(async { Ok(()) })
     }
 }
 
@@ -157,7 +177,7 @@ impl KafkaBackend for MockKafkaBackend {
     fn producer(&self) -> Box<dyn KafkaProducer> {
         struct NoopProducer;
         impl KafkaProducer for NoopProducer {
-            fn send<'a>(&'a self, _topic: &'a str, _payload: &'a [u8]) -> BoxFuture<'a, Result<(), SiegeError>> {
+            fn send<'a>(&'a self, _topic: &'a str, _key: Option<&'a [u8]>, _payload: &'a [u8]) -> BoxFuture<'a, Result<(), SiegeError>> {
                 Box::pin(async { Ok(()) })
             }
         }

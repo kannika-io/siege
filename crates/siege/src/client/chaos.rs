@@ -19,10 +19,10 @@ impl<'a, C: SiegeContext> Chaos<'a, C> {
         Ok(())
     }
 
-    pub async fn zero_retention(&self, topic: &str) -> Result<(), SiegeError> {
-        self.ctx.chaos().zero_retention(topic).await.map_err(|e| SiegeError::Chaos(e.to_string()))?;
+    pub async fn low_retention(&self, topic: &str) -> Result<(), SiegeError> {
+        self.ctx.chaos().low_retention(topic).await.map_err(|e| SiegeError::Chaos(e.to_string()))?;
         let detail = self.ctx.kafka().get_topic(topic).await?;
-        self.ctx.events().emit(&DomainEvent::ChaosRetentionZeroed(ChaosRetentionZeroedEvent { detail }));
+        self.ctx.events().emit(&DomainEvent::ChaosRetentionLowered(ChaosRetentionLoweredEvent { detail }));
         Ok(())
     }
 

@@ -1,17 +1,14 @@
 [package]
-name = "siege-seed"
+name = "siege-schema-registry"
 version.workspace = true
 edition.workspace = true
 
 [dependencies]
 siege.workspace = true
-siege-seed-avsc.workspace = true
-apache-avro.workspace = true
-fake.workspace = true
-rand.workspace = true
+reqwest.workspace = true
+serde.workspace = true
 serde_json.workspace = true
-futures.workspace = true
-uuid.workspace = true
 
 [dev-dependencies]
 tokio = { workspace = true, features = ["test-util", "macros"] }
+mockito = "1"

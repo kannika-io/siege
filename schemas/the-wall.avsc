@@ -1,0 +1,11 @@
+{
+  "type": "record",
+  "name": "TheWallEvent",
+  "namespace": "io.siege.schemas",
+  "fields": [
+    {"name": "ranger_name", "type": "string"},
+    {"name": "section", "type": "int"},
+    {"name": "temperature", "type": "double"},
+    {"name": "threat_detected", "type": "boolean"}
+  ]
+}

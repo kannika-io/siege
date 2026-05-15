@@ -28,10 +28,14 @@ impl KafkaProducer for Producer {
     fn send<'a>(
         &'a self,
         topic: &'a str,
+        key: Option<&'a [u8]>,
         payload: &'a [u8],
     ) -> BoxFuture<'a, Result<(), SiegeError>> {
         Box::pin(async move {
-            let record = FutureRecord::<(), [u8]>::to(topic).payload(payload);
+            let mut record = FutureRecord::<[u8], [u8]>::to(topic).payload(payload);
+            if let Some(k) = key {
+                record = record.key(k);
+            }
             self.producer
                 .send(record, Duration::from_secs(5))
                 .await

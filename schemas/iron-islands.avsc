@@ -1,0 +1,12 @@
+{
+  "type": "record",
+  "name": "IronIslandsEvent",
+  "namespace": "io.siege.schemas",
+  "fields": [
+    {"name": "captain", "type": "string"},
+    {"name": "ship_name", "type": "string"},
+    {"name": "crew_size", "type": "int"},
+    {"name": "destination", "type": "string"},
+    {"name": "is_raiding", "type": "boolean"}
+  ]
+}

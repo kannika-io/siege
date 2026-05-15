@@ -26,8 +26,8 @@ pub fn configure<C: SiegeContext>(cfg: &mut web::ServiceConfig) {
                 web::post().to(chaos::delete_topic::<C>),
             )
             .route(
-                "/chaos/zero-retention",
-                web::post().to(chaos::zero_retention::<C>),
+                "/chaos/low-retention",
+                web::post().to(chaos::low_retention::<C>),
             )
             .route(
                 "/chaos/flip-cleanup-policy",

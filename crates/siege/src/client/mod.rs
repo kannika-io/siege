@@ -35,8 +35,8 @@ mod tests {
     use std::sync::Mutex;
 
     use crate::{
-        EventEmitter, KafkaProperties, MockKafkaBackend, NoopChaos, NoopSeeder, SiegeContext,
-        SiegeError,
+        EventEmitter, KafkaProperties, MockKafkaBackend, NoopChaos, NoopSchemaRegistry, NoopSeeder,
+        SiegeContext, SiegeError,
     };
     use crate::event::DomainEvent;
     use crate::kafka::TopicDetail;
@@ -54,7 +54,7 @@ mod tests {
                 DomainEvent::TopicCreated(_) => "topic_created",
                 DomainEvent::TopicDeleted(_) => "topic_deleted",
                 DomainEvent::ChaosTopicDeleted(_) => "chaos_topic_deleted",
-                DomainEvent::ChaosRetentionZeroed(_) => "chaos_retention_zeroed",
+                DomainEvent::ChaosRetentionLowered(_) => "chaos_retention_lowered",
                 DomainEvent::ChaosCleanupPolicyFlipped(_) => "chaos_cleanup_policy_flipped",
                 DomainEvent::ChaosPartitionsIncreased(_) => "chaos_partitions_increased",
                 DomainEvent::ChaosPoisonPillsSent(_) => "chaos_poison_pills_sent",
@@ -70,6 +70,7 @@ mod tests {
         events: RecordingEmitter,
         chaos: NoopChaos,
         seeder: NoopSeeder,
+        schema_registry: NoopSchemaRegistry,
     }
 
     impl SiegeContext for TestCtx {
@@ -77,11 +78,13 @@ mod tests {
         type Events = RecordingEmitter;
         type Chaos = NoopChaos;
         type Seeder = NoopSeeder;
+        type SchemaRegistry = NoopSchemaRegistry;
 
         fn kafka(&self) -> &MockKafkaBackend { &self.kafka }
         fn events(&self) -> &RecordingEmitter { &self.events }
         fn chaos(&self) -> &NoopChaos { &self.chaos }
         fn seeder(&self) -> &NoopSeeder { &self.seeder }
+        fn schema_registry(&self) -> &NoopSchemaRegistry { &self.schema_registry }
     }
 
     fn test_client(topics: Vec<TopicDetail>) -> Client<TestCtx> {
@@ -90,6 +93,7 @@ mod tests {
             events: RecordingEmitter::default(),
             chaos: NoopChaos,
             seeder: NoopSeeder,
+            schema_registry: NoopSchemaRegistry,
         })
     }
 

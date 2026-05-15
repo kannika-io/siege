@@ -1,0 +1,11 @@
+{
+  "type": "record",
+  "name": "DragonstoneEvent",
+  "namespace": "io.siege.schemas",
+  "fields": [
+    {"name": "advisor", "type": "string"},
+    {"name": "counsel", "type": "string"},
+    {"name": "urgency", "type": "int"},
+    {"name": "approved", "type": "boolean"}
+  ]
+}

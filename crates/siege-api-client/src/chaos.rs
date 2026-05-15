@@ -13,7 +13,7 @@ pub enum ChaosError {
 
 #[allow(async_fn_in_trait)] // intentional: WASM futures are not Send
 pub trait ChaosExt {
-    async fn zero_retention(&self) -> Result<ChaosResult, ChaosError>;
+    async fn low_retention(&self) -> Result<ChaosResult, ChaosError>;
     async fn flip_cleanup_policy(&self) -> Result<ChaosResult, ChaosError>;
     async fn increase_partitions(&self, partitions: i32) -> Result<ChaosResult, ChaosError>;
     async fn poison_pills(&self, count: u32) -> Result<ChaosResult, ChaosError>;
@@ -21,8 +21,8 @@ pub trait ChaosExt {
 }
 
 impl ChaosExt for Topic<'_> {
-    async fn zero_retention(&self) -> Result<ChaosResult, ChaosError> {
-        self.chaos_post("zero-retention", serde_json::json!({ "topic": self.name }))
+    async fn low_retention(&self) -> Result<ChaosResult, ChaosError> {
+        self.chaos_post("low-retention", serde_json::json!({ "topic": self.name }))
             .await
     }
 

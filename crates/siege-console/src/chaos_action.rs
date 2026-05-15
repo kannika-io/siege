@@ -4,7 +4,7 @@ use siege_api_client::ChaosExt;
 #[derive(Clone, Copy, PartialEq)]
 pub enum ChaosAction {
     Delete,
-    ZeroRetention,
+    LowRetention,
     FlipCleanupPolicy,
     IncreasePartitions,
     PoisonPills,
@@ -14,7 +14,7 @@ pub enum ChaosAction {
 impl ChaosAction {
     pub const ALL: &[Self] = &[
         Self::Delete,
-        Self::ZeroRetention,
+        Self::LowRetention,
         Self::FlipCleanupPolicy,
         Self::IncreasePartitions,
         Self::PoisonPills,
@@ -24,7 +24,7 @@ impl ChaosAction {
     pub fn label(self) -> &'static str {
         match self {
             Self::Delete => "Delete",
-            Self::ZeroRetention => "Zero retention",
+            Self::LowRetention => "Low retention",
             Self::FlipCleanupPolicy => "Flip cleanup",
             Self::IncreasePartitions => "Add partition",
             Self::PoisonPills => "Poison pills",
@@ -35,7 +35,7 @@ impl ChaosAction {
     pub fn icon(self) -> IconName {
         match self {
             Self::Delete => IconName::Skull,
-            Self::ZeroRetention => IconName::Hourglass,
+            Self::LowRetention => IconName::Hourglass,
             Self::FlipCleanupPolicy => IconName::Swords,
             Self::IncreasePartitions => IconName::Shield,
             Self::PoisonPills => IconName::Flask,
@@ -50,7 +50,7 @@ impl ChaosAction {
     pub fn success_message(self, name: &str) -> String {
         match self {
             Self::Delete => format!("Deleted topic '{name}'"),
-            Self::ZeroRetention => format!("Set retention to zero for '{name}'"),
+            Self::LowRetention => format!("Set retention to 1ms for '{name}'"),
             Self::FlipCleanupPolicy => format!("Flipped cleanup policy for '{name}'"),
             Self::IncreasePartitions => format!("Increased partitions for '{name}'"),
             Self::PoisonPills => format!("Sent 10 poison pills to '{name}'"),
@@ -61,7 +61,7 @@ impl ChaosAction {
     pub async fn execute(self, topic: &siege_api_client::Topic<'_>) -> Result<(), String> {
         match self {
             Self::Delete => topic.delete().await.map_err(|e| e.to_string()),
-            Self::ZeroRetention => topic.zero_retention().await.map(|_| ()).map_err(|e| e.to_string()),
+            Self::LowRetention => topic.low_retention().await.map(|_| ()).map_err(|e| e.to_string()),
             Self::FlipCleanupPolicy => topic.flip_cleanup_policy().await.map(|_| ()).map_err(|e| e.to_string()),
             Self::IncreasePartitions => topic.increase_partitions(1).await.map(|_| ()).map_err(|e| e.to_string()),
             Self::PoisonPills => topic.poison_pills(10).await.map(|_| ()).map_err(|e| e.to_string()),

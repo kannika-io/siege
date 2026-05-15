@@ -11,9 +11,17 @@ kafka:
     @until docker compose exec kafka kafka-topics --bootstrap-server localhost:9092 --list > /dev/null 2>&1; do sleep 1; done
     @echo "Kafka ready"
 
+# Start Redpanda in Docker
+alias redpanda := rp
+rp:
+    docker compose -f compose.redpanda.yaml up -d
+    @echo "Waiting for Redpanda to be healthy..."
+    @until docker compose -f compose.redpanda.yaml exec redpanda rpk cluster info --brokers localhost:9092 > /dev/null 2>&1; do sleep 1; done
+    @echo "Redpanda ready (Kafka: localhost:19092, Schema Registry: localhost:18081, Console: localhost:9080)"
+
 # Build and run the API server (with seed topics)
-api: kafka
-    cargo run -p siege-api -- --bootstrap-servers {{bootstrap_servers}} --port {{api_port}} --seed
+api: rp
+    cargo run -p siege-api -- --bootstrap-servers localhost:19092 --schema-registry-url http://localhost:18081 --port {{api_port}} --seed
 
 # Build Tailwind CSS (watch mode)
 css-watch:

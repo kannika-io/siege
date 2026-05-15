@@ -1,0 +1,12 @@
+{
+  "type": "record",
+  "name": "WinterfellEvent",
+  "namespace": "io.siege.schemas",
+  "fields": [
+    {"name": "name", "type": "string"},
+    {"name": "role", "type": "string"},
+    {"name": "location", "type": "string"},
+    {"name": "loyalty_score", "type": "double"},
+    {"name": "is_stark", "type": "boolean"}
+  ]
+}

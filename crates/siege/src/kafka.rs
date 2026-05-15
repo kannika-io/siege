@@ -51,6 +51,7 @@ pub trait KafkaProducer: Send + Sync {
     fn send<'a>(
         &'a self,
         topic: &'a str,
+        key: Option<&'a [u8]>,
         payload: &'a [u8],
     ) -> BoxFuture<'a, Result<(), SiegeError>>;
 }

@@ -15,7 +15,7 @@ pub struct ChaosTopicDeletedEvent {
     pub topic: String,
 }
 
-pub struct ChaosRetentionZeroedEvent {
+pub struct ChaosRetentionLoweredEvent {
     pub detail: TopicDetail,
 }
 
@@ -45,7 +45,7 @@ pub enum DomainEvent {
     TopicCreated(TopicCreatedEvent),
     TopicDeleted(TopicDeletedEvent),
     ChaosTopicDeleted(ChaosTopicDeletedEvent),
-    ChaosRetentionZeroed(ChaosRetentionZeroedEvent),
+    ChaosRetentionLowered(ChaosRetentionLoweredEvent),
     ChaosCleanupPolicyFlipped(ChaosCleanupPolicyFlippedEvent),
     ChaosPartitionsIncreased(ChaosPartitionsIncreasedEvent),
     ChaosPoisonPillsSent(ChaosPoisonPillsSentEvent),

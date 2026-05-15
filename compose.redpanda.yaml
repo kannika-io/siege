@@ -1,0 +1,39 @@
+services:
+  redpanda:
+    image: docker.redpanda.com/redpandadata/redpanda:v24.3.1
+    command:
+      - redpanda
+      - start
+      - --kafka-addr internal://0.0.0.0:9092,external://0.0.0.0:19092
+      - --advertise-kafka-addr internal://redpanda:9092,external://localhost:19092
+      - --schema-registry-addr internal://0.0.0.0:8081,external://0.0.0.0:18081
+      - --pandaproxy-addr internal://0.0.0.0:8082,external://0.0.0.0:18082
+      - --advertise-rpc-addr redpanda:33145
+      - --smp 1
+      - --memory 512M
+      - --mode dev-container
+      - --set redpanda.log_compaction_interval_ms=3000
+    ports:
+      - "19092:19092"
+      - "18081:18081"
+      - "18082:18082"
+    healthcheck:
+      test: ["CMD", "rpk", "cluster", "info", "--brokers", "localhost:9092"]
+      interval: 5s
+      timeout: 10s
+      retries: 10
+
+  console:
+    image: docker.redpanda.com/redpandadata/console:v2.8.0
+    ports:
+      - "9080:8080"
+    environment:
+      CONFIG_FILEPATH: ""
+      KAFKA_BROKERS: redpanda:9092
+      KAFKA_SCHEMAREGISTRY_ENABLED: "true"
+      KAFKA_SCHEMAREGISTRY_URLS: http://redpanda:8081
+      REDPANDA_ADMINAPI_ENABLED: "true"
+      REDPANDA_ADMINAPI_URLS: http://redpanda:9644
+    depends_on:
+      redpanda:
+        condition: service_healthy
