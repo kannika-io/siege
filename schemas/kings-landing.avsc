@@ -1,0 +1,12 @@
+{
+  "type": "record",
+  "name": "KingsLandingEvent",
+  "namespace": "io.siege.schemas",
+  "fields": [
+    {"name": "name", "type": "string"},
+    {"name": "title", "type": "string"},
+    {"name": "house", "type": "string"},
+    {"name": "alive", "type": "boolean"},
+    {"name": "age", "type": "int"}
+  ]
+}

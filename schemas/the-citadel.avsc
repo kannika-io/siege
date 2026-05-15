@@ -1,0 +1,11 @@
+{
+  "type": "record",
+  "name": "TheCitadelEvent",
+  "namespace": "io.siege.schemas",
+  "fields": [
+    {"name": "maester", "type": "string"},
+    {"name": "subject", "type": "string"},
+    {"name": "scroll_id", "type": "long"},
+    {"name": "is_restricted", "type": "boolean"}
+  ]
+}
