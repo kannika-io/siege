@@ -1,3 +1,5 @@
+mod avro;
+
 use siege::kafka::KafkaBackend;
 use siege::{KafkaProperties, SeedBackend, SeedResult, SiegeError};
 
