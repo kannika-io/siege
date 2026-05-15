@@ -14,7 +14,7 @@ pub use chaos::ChaosBackend;
 pub use context::*;
 pub use error::*;
 pub use event::*;
-pub use mock::{MockKafkaBackend, NoopChaos, NoopSeeder};
+pub use mock::{MockKafkaBackend, NoopChaos, NoopSchemaRegistry, NoopSeeder};
 pub use seed::{SeedBackend, SeedResult};
 pub use schema_registry::{SchemaId, SchemaRegistryBackend};
 pub use kafka::{KafkaProducer, BoxFuture};

@@ -3,6 +3,7 @@ use std::sync::{Arc, Mutex};
 
 use crate::chaos::ChaosBackend;
 use crate::kafka::{BoxFuture, KafkaBackend, KafkaProducer, TopicDetail, TopicMeta};
+use crate::schema_registry::{SchemaId, SchemaRegistryBackend};
 use crate::seed::{SeedBackend, SeedResult};
 use crate::{KafkaProperties, SiegeError};
 
@@ -29,6 +30,25 @@ impl SeedBackend for NoopSeeder {
 
     async fn seed_topics(&self) -> Result<SeedResult, SiegeError> {
         Ok(SeedResult { created: vec![], skipped: vec![] })
+    }
+}
+
+pub struct NoopSchemaRegistry;
+
+impl SchemaRegistryBackend for NoopSchemaRegistry {
+    fn register_schema(
+        &self,
+        _subject: &str,
+        _schema: &str,
+    ) -> BoxFuture<'_, Result<SchemaId, SiegeError>> {
+        Box::pin(async { Ok(SchemaId(1)) })
+    }
+
+    fn delete_subject(
+        &self,
+        _subject: &str,
+    ) -> BoxFuture<'_, Result<(), SiegeError>> {
+        Box::pin(async { Ok(()) })
     }
 }
 

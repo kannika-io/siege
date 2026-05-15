@@ -7,7 +7,7 @@ mod sse;
 use actix_cors::Cors;
 use actix_web::{web, App, HttpServer};
 use clap::Parser;
-use siege::{SeedBackend, SiegeContext};
+use siege::{NoopSchemaRegistry, SeedBackend, SiegeContext};
 use siege_api_spec::ApiDoc;
 use utoipa::OpenApi;
 use utoipa_swagger_ui::SwaggerUi;
@@ -22,6 +22,7 @@ pub(crate) struct Siege {
     events: Broadcaster,
     chaos: ChaosClient,
     seeder: Seeder,
+    schema_registry: NoopSchemaRegistry,
 }
 
 impl SiegeContext for Siege {
@@ -29,6 +30,7 @@ impl SiegeContext for Siege {
     type Events = Broadcaster;
     type Chaos = ChaosClient;
     type Seeder = Seeder;
+    type SchemaRegistry = NoopSchemaRegistry;
 
     fn kafka(&self) -> &RdKafkaBackend {
         &self.kafka
@@ -44,6 +46,10 @@ impl SiegeContext for Siege {
 
     fn seeder(&self) -> &Seeder {
         &self.seeder
+    }
+
+    fn schema_registry(&self) -> &NoopSchemaRegistry {
+        &self.schema_registry
     }
 }
 
@@ -99,6 +105,7 @@ async fn main() -> std::io::Result<()> {
         events: broadcaster,
         chaos,
         seeder,
+        schema_registry: NoopSchemaRegistry,
     }));
 
     let addr = ("0.0.0.0", cli.port);
