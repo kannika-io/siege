@@ -31,8 +31,12 @@ pub async fn watch_cluster<K: KafkaBackend>(
             _ = ticker.tick() => {}
         }
 
-        let Ok(topics) = backend.list_topics().await else {
-            continue;
+        let topics = match backend.list_topics().await {
+            Ok(t) => t,
+            Err(e) => {
+                eprintln!("watcher: list_topics failed: {e}");
+                continue;
+            }
         };
 
         let current: HashMap<String, TopicResource> = topics

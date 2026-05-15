@@ -35,8 +35,8 @@ mod tests {
     use std::sync::Mutex;
 
     use crate::{
-        EventEmitter, KafkaProperties, MockKafkaBackend, NoopChaos, NoopSchemaRegistry, NoopSeeder,
-        SiegeContext, SiegeError,
+        EventEmitter, KafkaProperties, MockKafkaBackend, NoopChaos, NoopSchemaRegistry,
+        NoopSeeder, SiegeContext, SiegeError,
     };
     use crate::event::DomainEvent;
     use crate::kafka::TopicDetail;
@@ -70,7 +70,6 @@ mod tests {
         events: RecordingEmitter,
         chaos: NoopChaos,
         seeder: NoopSeeder,
-        schema_registry: NoopSchemaRegistry,
     }
 
     impl SiegeContext for TestCtx {
@@ -84,7 +83,7 @@ mod tests {
         fn events(&self) -> &RecordingEmitter { &self.events }
         fn chaos(&self) -> &NoopChaos { &self.chaos }
         fn seeder(&self) -> &NoopSeeder { &self.seeder }
-        fn schema_registry(&self) -> &NoopSchemaRegistry { &self.schema_registry }
+        fn schema_registry(&self) -> Option<&NoopSchemaRegistry> { None }
     }
 
     fn test_client(topics: Vec<TopicDetail>) -> Client<TestCtx> {
@@ -93,7 +92,6 @@ mod tests {
             events: RecordingEmitter::default(),
             chaos: NoopChaos,
             seeder: NoopSeeder,
-            schema_registry: NoopSchemaRegistry,
         })
     }
 

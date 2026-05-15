@@ -114,7 +114,6 @@ mod tests {
         events: Broadcaster,
         chaos: NoopChaos,
         seeder: NoopSeeder,
-        schema_registry: NoopSchemaRegistry,
     }
 
     impl SiegeContext for MockContext {
@@ -128,7 +127,7 @@ mod tests {
         fn events(&self) -> &Broadcaster { &self.events }
         fn chaos(&self) -> &NoopChaos { &self.chaos }
         fn seeder(&self) -> &NoopSeeder { &self.seeder }
-        fn schema_registry(&self) -> &NoopSchemaRegistry { &self.schema_registry }
+        fn schema_registry(&self) -> Option<&NoopSchemaRegistry> { None }
     }
 
     fn mock_ctx(kafka: MockKafkaBackend) -> MockContext {
@@ -137,7 +136,6 @@ mod tests {
             events: Broadcaster::new(16),
             chaos: NoopChaos,
             seeder: NoopSeeder,
-            schema_registry: NoopSchemaRegistry,
         }
     }
 

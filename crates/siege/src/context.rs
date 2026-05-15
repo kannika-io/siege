@@ -15,5 +15,5 @@ pub trait SiegeContext: Send + Sync + 'static {
     fn events(&self) -> &Self::Events;
     fn chaos(&self) -> &Self::Chaos;
     fn seeder(&self) -> &Self::Seeder;
-    fn schema_registry(&self) -> &Self::SchemaRegistry;
+    fn schema_registry(&self) -> Option<&Self::SchemaRegistry>;
 }

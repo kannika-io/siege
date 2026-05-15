@@ -7,8 +7,7 @@ mod sse;
 use actix_cors::Cors;
 use actix_web::{web, App, HttpServer};
 use clap::Parser;
-use siege::schema_registry::SchemaRegistryBackend;
-use siege::{BoxFuture, NoopSchemaRegistry, SchemaId, SeedBackend, SiegeContext, SiegeError};
+use siege::{SeedBackend, SiegeContext};
 use siege_api_spec::ApiDoc;
 use siege_schema_registry::SchemaRegistryClient;
 use siege_seed::avsc;
@@ -21,40 +20,12 @@ use siege_seed::{Seeder, TopicSeed};
 use sse::broadcaster::Broadcaster;
 use tokio_util::sync::CancellationToken;
 
-pub(crate) enum SchemaRegistryChoice {
-    Real(SchemaRegistryClient),
-    Noop(NoopSchemaRegistry),
-}
-
-impl SchemaRegistryBackend for SchemaRegistryChoice {
-    fn register_schema(
-        &self,
-        subject: &str,
-        schema: &str,
-    ) -> BoxFuture<'_, Result<SchemaId, SiegeError>> {
-        match self {
-            Self::Real(inner) => inner.register_schema(subject, schema),
-            Self::Noop(inner) => inner.register_schema(subject, schema),
-        }
-    }
-
-    fn delete_subject(
-        &self,
-        subject: &str,
-    ) -> BoxFuture<'_, Result<(), SiegeError>> {
-        match self {
-            Self::Real(inner) => inner.delete_subject(subject),
-            Self::Noop(inner) => inner.delete_subject(subject),
-        }
-    }
-}
-
 pub(crate) struct Siege {
     kafka: RdKafkaBackend,
     events: Broadcaster,
     chaos: ChaosClient,
     seeder: Seeder,
-    schema_registry: SchemaRegistryChoice,
+    schema_registry: Option<SchemaRegistryClient>,
 }
 
 impl SiegeContext for Siege {
@@ -62,7 +33,7 @@ impl SiegeContext for Siege {
     type Events = Broadcaster;
     type Chaos = ChaosClient;
     type Seeder = Seeder;
-    type SchemaRegistry = SchemaRegistryChoice;
+    type SchemaRegistry = SchemaRegistryClient;
 
     fn kafka(&self) -> &RdKafkaBackend {
         &self.kafka
@@ -80,8 +51,8 @@ impl SiegeContext for Siege {
         &self.seeder
     }
 
-    fn schema_registry(&self) -> &SchemaRegistryChoice {
-        &self.schema_registry
+    fn schema_registry(&self) -> Option<&SchemaRegistryClient> {
+        self.schema_registry.as_ref()
     }
 }
 
@@ -109,10 +80,7 @@ async fn main() -> std::io::Result<()> {
     let broadcaster = Broadcaster::new(256);
     let chaos = ChaosClient::new(backend.clone());
 
-    let schema_registry_choice = match cli.schema_registry_url {
-        Some(ref url) => SchemaRegistryChoice::Real(SchemaRegistryClient::new(url)),
-        None => SchemaRegistryChoice::Noop(NoopSchemaRegistry),
-    };
+    let schema_registry = cli.schema_registry_url.as_deref().map(SchemaRegistryClient::new);
 
     let mut seeder = Seeder::new(backend.clone())
         .topic(
@@ -179,7 +147,7 @@ async fn main() -> std::io::Result<()> {
         events: broadcaster,
         chaos,
         seeder,
-        schema_registry: schema_registry_choice,
+        schema_registry,
     }));
 
     let addr = ("0.0.0.0", cli.port);
