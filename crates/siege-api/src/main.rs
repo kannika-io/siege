@@ -19,6 +19,7 @@ use siege_chaos::ChaosClient;
 use siege_kafka::RdKafkaBackend;
 use siege_seed::{Seeder, TopicSeed};
 use sse::broadcaster::Broadcaster;
+use tokio_util::sync::CancellationToken;
 
 pub(crate) enum SchemaRegistryChoice {
     Real(SchemaRegistryClient),
@@ -100,7 +101,7 @@ struct Cli {
     schema_registry_url: Option<String>,
 }
 
-#[actix_web::main]
+#[tokio::main]
 async fn main() -> std::io::Result<()> {
     let cli = Cli::parse();
 
@@ -156,13 +157,17 @@ async fn main() -> std::io::Result<()> {
         }
     }
 
+    let cancel = CancellationToken::new();
+
     let watcher_backend = backend.clone();
     let watcher_broadcaster = broadcaster.clone();
-    tokio::spawn(async move {
+    let watcher_cancel = cancel.clone();
+    let watcher_handle = tokio::spawn(async move {
         sse::watcher::watch_cluster(
             &watcher_backend,
             &watcher_broadcaster,
             std::time::Duration::from_secs(5),
+            watcher_cancel,
         )
         .await;
     });
@@ -207,5 +212,20 @@ async fn main() -> std::io::Result<()> {
     };
 
     eprintln!("listening on {}:{}", addr.0, addr.1);
-    server.run().await
+    let server = server.disable_signals().run();
+    let server_handle = server.handle();
+
+    let shutdown_cancel = cancel.clone();
+    tokio::spawn(async move {
+        if tokio::signal::ctrl_c().await.is_ok() {
+            eprintln!("\nshutting down…");
+            shutdown_cancel.cancel();
+            server_handle.stop(true).await;
+        }
+    });
+
+    let result = server.await;
+    cancel.cancel();
+    let _ = watcher_handle.await;
+    result
 }

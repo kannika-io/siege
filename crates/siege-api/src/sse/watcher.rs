@@ -3,6 +3,7 @@ use std::time::Duration;
 
 use siege::kafka::KafkaBackend;
 use siege_api_spec::{SseEvent, TopicResource};
+use tokio_util::sync::CancellationToken;
 
 use super::broadcaster::Broadcaster;
 
@@ -19,12 +20,16 @@ pub async fn watch_cluster<K: KafkaBackend>(
     backend: &K,
     broadcaster: &Broadcaster,
     interval: Duration,
+    cancel: CancellationToken,
 ) {
     let mut known: HashMap<String, TopicResource> = HashMap::new();
     let mut ticker = tokio::time::interval(interval);
 
     loop {
-        ticker.tick().await;
+        tokio::select! {
+            _ = cancel.cancelled() => break,
+            _ = ticker.tick() => {}
+        }
 
         let Ok(topics) = backend.list_topics().await else {
             continue;
@@ -70,6 +75,7 @@ mod tests {
     use siege::kafka::TopicDetail;
     use siege::KafkaProperties;
     use siege::MockKafkaBackend;
+    use tokio_util::sync::CancellationToken;
 
     use super::*;
 
@@ -78,11 +84,13 @@ mod tests {
         let backend = MockKafkaBackend::new();
         let broadcaster = Broadcaster::new(16);
         let mut rx = broadcaster.subscribe();
+        let cancel = CancellationToken::new();
 
         let bc = broadcaster.clone();
         let b = backend.clone();
+        let c = cancel.clone();
         let handle = tokio::spawn(async move {
-            watch_cluster(&b, &bc, Duration::from_millis(50)).await;
+            watch_cluster(&b, &bc, Duration::from_millis(50), c).await;
         });
 
         tokio::time::sleep(Duration::from_millis(100)).await;
@@ -96,7 +104,8 @@ mod tests {
 
         assert!(matches!(event, SseEvent::TopicCreated { topic } if topic.name == "new-topic"));
 
-        handle.abort();
+        cancel.cancel();
+        let _ = handle.await;
     }
 
     #[tokio::test]
@@ -109,11 +118,13 @@ mod tests {
         }]);
         let broadcaster = Broadcaster::new(16);
         let mut rx = broadcaster.subscribe();
+        let cancel = CancellationToken::new();
 
         let bc = broadcaster.clone();
         let b = backend.clone();
+        let c = cancel.clone();
         let handle = tokio::spawn(async move {
-            watch_cluster(&b, &bc, Duration::from_millis(50)).await;
+            watch_cluster(&b, &bc, Duration::from_millis(50), c).await;
         });
 
         let event = tokio::time::timeout(Duration::from_millis(200), rx.recv())
@@ -131,7 +142,8 @@ mod tests {
 
         assert!(matches!(event, SseEvent::TopicDeleted { name } if name == "doomed"));
 
-        handle.abort();
+        cancel.cancel();
+        let _ = handle.await;
     }
 
     #[tokio::test]
@@ -144,11 +156,13 @@ mod tests {
         }]);
         let broadcaster = Broadcaster::new(16);
         let mut rx = broadcaster.subscribe();
+        let cancel = CancellationToken::new();
 
         let bc = broadcaster.clone();
         let b = backend.clone();
+        let c = cancel.clone();
         let handle = tokio::spawn(async move {
-            watch_cluster(&b, &bc, Duration::from_millis(50)).await;
+            watch_cluster(&b, &bc, Duration::from_millis(50), c).await;
         });
 
         let event = tokio::time::timeout(Duration::from_millis(200), rx.recv())
@@ -168,6 +182,7 @@ mod tests {
 
         assert!(matches!(event, SseEvent::TopicUpdated { topic } if topic.config.is_compacted()));
 
-        handle.abort();
+        cancel.cancel();
+        let _ = handle.await;
     }
 }

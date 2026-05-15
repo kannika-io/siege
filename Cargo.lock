@@ -3757,6 +3757,7 @@ dependencies = [
  "siege-seed-avsc",
  "tokio",
  "tokio-stream",
+ "tokio-util",
  "utoipa",
  "utoipa-swagger-ui",
 ]
