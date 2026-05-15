@@ -11,6 +11,7 @@ fake.workspace = true
 rand.workspace = true
 serde_json.workspace = true
 futures.workspace = true
+uuid.workspace = true
 
 [dev-dependencies]
 tokio = { workspace = true, features = ["test-util", "macros"] }

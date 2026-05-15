@@ -57,6 +57,7 @@ thiserror = "2"
 
 # Randomness
 rand = "0.9"
+uuid = { version = "1", features = ["v5"] }
 
 # OpenAPI
 utoipa = "5"

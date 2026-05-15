@@ -103,17 +103,20 @@ impl Seeder {
         let serializer = AvroSerializer::new(schema.clone(), schema_id);
         let producer = self.kafka.producer();
 
-        let mut payloads = Vec::with_capacity(count as usize);
+        let namespace = uuid::Uuid::new_v5(&uuid::Uuid::NAMESPACE_URL, topic.as_bytes());
 
-        for _ in 0..count {
+        let mut records = Vec::with_capacity(count as usize);
+
+        for i in 0..count {
             let record = generate_record(&schema, rng)?;
             let payload = serializer.serialize(record)?;
-            payloads.push(payload);
+            let key = uuid::Uuid::new_v5(&namespace, &i.to_be_bytes());
+            records.push((key, payload));
         }
 
-        let futures: Vec<_> = payloads
+        let futures: Vec<_> = records
             .iter()
-            .map(|payload| producer.send(topic, payload))
+            .map(|(key, payload)| producer.send(topic, Some(key.as_bytes()), payload))
             .collect();
 
         futures::future::try_join_all(futures).await?;

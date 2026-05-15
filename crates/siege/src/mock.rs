@@ -177,7 +177,7 @@ impl KafkaBackend for MockKafkaBackend {
     fn producer(&self) -> Box<dyn KafkaProducer> {
         struct NoopProducer;
         impl KafkaProducer for NoopProducer {
-            fn send<'a>(&'a self, _topic: &'a str, _payload: &'a [u8]) -> BoxFuture<'a, Result<(), SiegeError>> {
+            fn send<'a>(&'a self, _topic: &'a str, _key: Option<&'a [u8]>, _payload: &'a [u8]) -> BoxFuture<'a, Result<(), SiegeError>> {
                 Box::pin(async { Ok(()) })
             }
         }

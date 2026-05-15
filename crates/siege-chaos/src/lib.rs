@@ -65,7 +65,7 @@ impl ChaosBackend for ChaosClient {
         let producer = self.backend.producer();
         for _ in 0..count {
             let payload = payloads::poison_pill();
-            producer.send(topic, &payload).await?;
+            producer.send(topic, None, &payload).await?;
         }
         Ok(())
     }
@@ -74,7 +74,7 @@ impl ChaosBackend for ChaosClient {
         let producer = self.backend.producer();
         for _ in 0..count {
             let payload = payloads::schema_breaking_json();
-            producer.send(topic, &payload).await?;
+            producer.send(topic, None, &payload).await?;
         }
         Ok(())
     }
