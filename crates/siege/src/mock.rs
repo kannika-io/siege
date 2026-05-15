@@ -16,7 +16,7 @@ impl ChaosBackend for NoopChaos {
         Err(SiegeError::TopicNotFound(name.to_owned()))
     }
     async fn delete_topic(&self, _topic: &str) -> Result<(), SiegeError> { Ok(()) }
-    async fn zero_retention(&self, _topic: &str) -> Result<(), SiegeError> { Ok(()) }
+    async fn low_retention(&self, _topic: &str) -> Result<(), SiegeError> { Ok(()) }
     async fn flip_cleanup_policy(&self, _topic: &str) -> Result<(), SiegeError> { Ok(()) }
     async fn increase_partitions(&self, _topic: &str, _extra: i32) -> Result<(), SiegeError> { Ok(()) }
     async fn poison_pills(&self, _topic: &str, _count: u32) -> Result<(), SiegeError> { Ok(()) }

@@ -20,12 +20,12 @@ pub async fn delete_topic<C: SiegeContext>(
     Ok(ok(req.topic))
 }
 
-pub async fn zero_retention<C: SiegeContext>(
+pub async fn low_retention<C: SiegeContext>(
     client: web::Data<siege::client::Client<C>>,
     body: web::Json<ChaosTopicRequest>,
 ) -> Result<HttpResponse, HttpError> {
     let req = body.into_inner();
-    client.chaos().zero_retention(&req.topic).await?;
+    client.chaos().low_retention(&req.topic).await?;
     Ok(ok(req.topic))
 }
 

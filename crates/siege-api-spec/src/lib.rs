@@ -20,7 +20,7 @@ use utoipa::OpenApi;
     ),
     paths(
         list_topics, get_topic, create_topic, delete_topic, update_topic_config,
-        chaos_delete_topic, chaos_zero_retention, chaos_flip_cleanup_policy,
+        chaos_delete_topic, chaos_low_retention, chaos_flip_cleanup_policy,
         chaos_increase_partitions, chaos_poison_pills, chaos_schema_break,
     ),
     components(schemas(
@@ -112,19 +112,19 @@ async fn update_topic_config() {}
 #[allow(dead_code)]
 async fn chaos_delete_topic() {}
 
-/// Set retention to zero (chaos)
+/// Set retention to 1ms (chaos)
 #[utoipa::path(
     post,
-    path = "/api/chaos/zero-retention",
+    path = "/api/chaos/low-retention",
     request_body = ChaosTopicRequest,
     responses(
-        (status = 200, description = "Retention set to zero", body = ChaosResult),
+        (status = 200, description = "Retention set to 1ms", body = ChaosResult),
         (status = 404, description = "Topic not found", body = ChaosErrorResponse),
         (status = 502, description = "Kafka error", body = ChaosErrorResponse)
     )
 )]
 #[allow(dead_code)]
-async fn chaos_zero_retention() {}
+async fn chaos_low_retention() {}
 
 /// Flip cleanup policy (chaos)
 #[utoipa::path(
@@ -193,6 +193,6 @@ mod tests {
         assert!(json.contains("/api/topics/{name}"));
         assert!(json.contains("/api/topics/{name}/config"));
         assert!(json.contains("/api/chaos/delete-topic"));
-        assert!(json.contains("/api/chaos/zero-retention"));
+        assert!(json.contains("/api/chaos/low-retention"));
     }
 }

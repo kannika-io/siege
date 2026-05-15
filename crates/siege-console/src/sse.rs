@@ -31,7 +31,7 @@ pub fn use_sse_subscription() {
                 }
                 SseEvent::TopicCreated { topic }
                 | SseEvent::TopicUpdated { topic }
-                | SseEvent::ChaosRetentionZeroed { topic }
+                | SseEvent::ChaosRetentionLowered { topic }
                 | SseEvent::ChaosCleanupPolicyFlipped { topic }
                 | SseEvent::ChaosPartitionsIncreased { topic } => {
                     topics_state.upsert_topic(topic);

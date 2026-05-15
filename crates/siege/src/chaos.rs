@@ -14,7 +14,7 @@ pub trait ChaosBackend: Send + Sync + 'static {
         &self,
         topic: &str,
     ) -> impl Future<Output = Result<(), Self::Error>> + Send;
-    fn zero_retention(
+    fn low_retention(
         &self,
         topic: &str,
     ) -> impl Future<Output = Result<(), Self::Error>> + Send;

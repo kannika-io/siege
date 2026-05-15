@@ -30,10 +30,10 @@ fn wheel_slices() -> Vec<WheelSlice<WheelOutcome>> {
             label: "Terraform gone wrong".into(),
             color: "#7c3aed".into(),
             payload: WheelOutcome {
-                action: ChaosAction::ZeroRetention,
+                action: ChaosAction::LowRetention,
                 all_topics: false,
                 label: "Terraform gone wrong".into(),
-                description: "Someone copy-pasted a Terraform module from Stack Overflow and set retention to zero on {topic} \"because the example did it.\" The plan said 1 resource changed, the reality said otherwise.".into(),
+                description: "Someone copy-pasted a Terraform module from Stack Overflow and set retention to 1ms on {topic} \"because the example did it.\" The plan said 1 resource changed, the reality said otherwise.".into(),
             },
         },
         WheelSlice {

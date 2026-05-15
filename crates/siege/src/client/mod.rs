@@ -54,7 +54,7 @@ mod tests {
                 DomainEvent::TopicCreated(_) => "topic_created",
                 DomainEvent::TopicDeleted(_) => "topic_deleted",
                 DomainEvent::ChaosTopicDeleted(_) => "chaos_topic_deleted",
-                DomainEvent::ChaosRetentionZeroed(_) => "chaos_retention_zeroed",
+                DomainEvent::ChaosRetentionLowered(_) => "chaos_retention_lowered",
                 DomainEvent::ChaosCleanupPolicyFlipped(_) => "chaos_cleanup_policy_flipped",
                 DomainEvent::ChaosPartitionsIncreased(_) => "chaos_partitions_increased",
                 DomainEvent::ChaosPoisonPillsSent(_) => "chaos_poison_pills_sent",
