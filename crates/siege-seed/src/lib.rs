@@ -1,4 +1,5 @@
 mod avro;
+mod faker;
 
 use siege::kafka::KafkaBackend;
 use siege::{KafkaProperties, SeedBackend, SeedResult, SiegeError};
