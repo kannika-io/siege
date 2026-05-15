@@ -110,7 +110,7 @@ impl Seeder {
         for i in 0..count {
             let record = generate_record(&schema, rng)?;
             let payload = serializer.serialize(record)?;
-            let key = uuid::Uuid::new_v5(&namespace, &i.to_be_bytes());
+            let key = uuid::Uuid::new_v5(&namespace, &i.to_be_bytes()).to_string();
             records.push((key, payload));
         }
 
