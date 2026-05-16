@@ -86,36 +86,37 @@ async fn main() -> std::io::Result<()> {
     let schema_registry = cli.schema_registry_url.as_deref().map(SchemaRegistryClient::new);
 
     let mut seeder = Seeder::new(backend.clone())
+        .idempotent()
         .topic(
             TopicSeed::new("kings-landing", 6)
                 .schema(avsc!("../../schemas/kings-landing.avsc"))
-                .records(100),
+                .records(100_000),
         )
         .topic(
             TopicSeed::new("winterfell", 3)
                 .schema(avsc!("../../schemas/winterfell.avsc"))
-                .records(100),
+                .records(100_000),
         )
         .topic(
             TopicSeed::new("the-wall", 1)
                 .schema(avsc!("../../schemas/the-wall.avsc"))
-                .records(50),
+                .records(50_000),
         )
         .topic(
             TopicSeed::new("iron-islands", 3)
                 .schema(avsc!("../../schemas/iron-islands.avsc"))
-                .records(100),
+                .records(100_000),
         )
         .topic(
             TopicSeed::new("dragonstone", 3)
                 .schema(avsc!("../../schemas/dragonstone.avsc"))
-                .records(100),
+                .records(100_000),
         )
         .topic(
             TopicSeed::new("the-citadel", 1)
                 .config("cleanup.policy", "compact")
                 .schema(avsc!("../../schemas/the-citadel.avsc"))
-                .records(50),
+                .records(50_000),
         );
 
     if let Some(ref hook_path) = cli.post_seed_hook {

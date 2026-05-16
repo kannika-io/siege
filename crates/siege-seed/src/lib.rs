@@ -5,12 +5,14 @@ pub mod hook;
 pub use hook::Hook;
 pub use siege_seed_avsc::avsc;
 
+use std::sync::atomic::{AtomicBool, Ordering};
+
 use apache_avro::Schema;
 use fake::rand::SeedableRng;
 use fake::rand::rngs::StdRng;
 use siege::kafka::KafkaBackend;
 use siege::schema_registry::SchemaRegistryBackend;
-use siege::{KafkaProperties, SeedBackend, SeedResult, SiegeError};
+use siege::{KafkaProperties, SeedBackend, SeedError, SeedResult, SiegeError};
 
 use avro::AvroSerializer;
 use faker::generate_record;
@@ -53,12 +55,34 @@ impl TopicSeed {
     }
 }
 
+struct SeedGuard<'a> {
+    flag: &'a AtomicBool,
+}
+
+impl<'a> SeedGuard<'a> {
+    fn acquire(flag: &'a AtomicBool) -> Option<Self> {
+        if flag.swap(true, Ordering::SeqCst) {
+            None
+        } else {
+            Some(Self { flag })
+        }
+    }
+}
+
+impl Drop for SeedGuard<'_> {
+    fn drop(&mut self) {
+        self.flag.store(false, Ordering::SeqCst);
+    }
+}
+
 pub struct Seeder {
     kafka: Box<dyn KafkaBackend>,
     schema_registry: Option<Box<dyn SchemaRegistryBackend>>,
     seeds: Vec<TopicSeed>,
     rng_seed: u64,
     on_complete: Option<tokio::sync::Mutex<Box<dyn DynHook>>>,
+    idempotent: bool,
+    running: AtomicBool,
 }
 
 impl Seeder {
@@ -69,7 +93,14 @@ impl Seeder {
             seeds: Vec::new(),
             rng_seed: 42,
             on_complete: None,
+            idempotent: false,
+            running: AtomicBool::new(false),
         }
+    }
+
+    pub fn idempotent(mut self) -> Self {
+        self.idempotent = true;
+        self
     }
 
     pub fn schema_registry(mut self, sr: impl SchemaRegistryBackend) -> Self {
@@ -102,13 +133,13 @@ impl Seeder {
         let sr = self
             .schema_registry
             .as_ref()
-            .ok_or_else(|| SiegeError::Seed("schema_registry is required to seed data".into()))?;
+            .ok_or_else(|| SiegeError::Seed(SeedError::Failed("schema_registry is required to seed data".into())))?;
 
         let subject = format!("{topic}-value");
         let schema_id = sr.register_schema(&subject, schema_str).await?;
 
         let schema = Schema::parse_str(schema_str)
-            .map_err(|e| SiegeError::Seed(format!("failed to parse schema: {e}")))?;
+            .map_err(|e| SiegeError::Seed(SeedError::Failed(format!("failed to parse schema: {e}"))))?;
 
         let serializer = AvroSerializer::new(schema.clone(), schema_id);
         let producer = self.kafka.producer();
@@ -136,12 +167,21 @@ impl Seeder {
 }
 
 impl SeedBackend for Seeder {
-    type Error = SiegeError;
 
     async fn seed_topics(&self) -> Result<SeedResult, SiegeError> {
+        let _guard = if self.idempotent {
+            match SeedGuard::acquire(&self.running) {
+                Some(g) => Some(g),
+                None => return Err(SiegeError::Seed(SeedError::AlreadySeeding)),
+            }
+        } else {
+            None
+        };
+
         let mut created = Vec::new();
         let mut skipped = Vec::new();
         let mut rng = StdRng::seed_from_u64(self.rng_seed);
+        let start = std::time::Instant::now();
 
         for seed in &self.seeds {
             match self
@@ -165,6 +205,8 @@ impl SeedBackend for Seeder {
                 Err(_) => skipped.push(seed.name.clone()),
             }
         }
+
+        eprintln!("seed completed in {:.2?}", start.elapsed());
 
         if let Some(hook) = &self.on_complete {
             let mut hook = hook.lock().await;
@@ -199,7 +241,7 @@ mod tests {
 
     impl Hook for FailingHook {
         async fn run(&mut self) -> Result<(), SiegeError> {
-            Err(SiegeError::Seed("hook exploded".into()))
+            Err(SiegeError::Seed(SeedError::Failed("hook exploded".into())))
         }
     }
 
