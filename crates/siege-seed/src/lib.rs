@@ -1,5 +1,6 @@
 mod avro;
 mod faker;
+pub mod hook;
 
 pub use siege_seed_avsc::avsc;
 
