@@ -70,6 +70,9 @@ struct Cli {
 
     #[arg(long)]
     schema_registry_url: Option<String>,
+
+    #[arg(long)]
+    post_seed_hook: Option<String>,
 }
 
 #[tokio::main]
@@ -114,6 +117,14 @@ async fn main() -> std::io::Result<()> {
                 .schema(avsc!("../../schemas/the-citadel.avsc"))
                 .records(50),
         );
+
+    if let Some(ref hook_path) = cli.post_seed_hook {
+        if cli.seed {
+            seeder = seeder.on_complete(tokio::process::Command::new(hook_path));
+        } else {
+            eprintln!("warning: --post-seed-hook has no effect without --seed");
+        }
+    }
 
     if let Some(ref url) = cli.schema_registry_url {
         seeder = seeder.schema_registry(SchemaRegistryClient::new(url));
