@@ -62,7 +62,7 @@ struct Cli {
     #[arg(long)]
     bootstrap_servers: String,
 
-    #[arg(long, default_value = "8080")]
+    #[arg(long, default_value = "51363")]
     port: u16,
 
     #[arg(long, default_value = "false")]

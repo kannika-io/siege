@@ -1,6 +1,0 @@
-apiVersion: armory.kannika.io/v1alpha1
-kind: VolumeStorage
-metadata:
-  name: demo-volumestorage
-  namespace: armory
-spec: {}

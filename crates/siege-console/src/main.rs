@@ -12,7 +12,7 @@ use dioxus::prelude::*;
 use routes::Route;
 use state::{AppState, Theme};
 
-const API_URL: &str = "http://localhost:8080";
+const API_URL: &str = "http://localhost:51363";
 
 fn main() {
     dioxus::launch(App);

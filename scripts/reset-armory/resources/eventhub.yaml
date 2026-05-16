@@ -1,0 +1,9 @@
+apiVersion: kannika.io/v1alpha
+kind: EventHub
+metadata:
+  name: redpanda
+  namespace: kannika-data
+spec:
+  kafka:
+    properties:
+      bootstrap.servers: redpanda:9092

@@ -29,9 +29,13 @@ impl Hook for Command {
             .unwrap_or(0);
         let log_path = std::env::temp_dir().join(format!("siege-post-seed-hook-{timestamp}.log"));
 
+        eprintln!("[post-seed-hook] running...");
+        eprintln!("[post-seed-hook] log: {}", log_path.display());
+
         let mut child = self
             .stdout(std::process::Stdio::piped())
             .stderr(std::process::Stdio::piped())
+            .kill_on_drop(true)
             .spawn()
             .map_err(|e| SiegeError::Seed(format!("post-seed hook failed to spawn: {e}")))?;
 
@@ -45,6 +49,7 @@ impl Hook for Command {
             if let Some(stdout) = stdout {
                 let mut lines = BufReader::new(stdout).lines();
                 while let Ok(Some(line)) = lines.next_line().await {
+                    eprintln!("[post-seed-hook] {line}");
                     if let Some(ref mut f) = file {
                         let _ = f.write_all(format!("{line}\n").as_bytes()).await;
                     }

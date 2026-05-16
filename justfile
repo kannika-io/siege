@@ -1,6 +1,6 @@
 set dotenv-load
 
-api_port := "8080"
+api_port := "51363"
 console_port := "3000"
 bootstrap_servers := "localhost:9092"
 
@@ -21,7 +21,7 @@ rp:
 
 # Build and run the API server (with seed topics)
 api: rp
-    cargo run -p siege-api -- --bootstrap-servers localhost:19092 --schema-registry-url http://localhost:18081 --port {{api_port}} --seed
+    cargo run -p siege-api -- --bootstrap-servers localhost:19092 --schema-registry-url http://localhost:18081 --port {{api_port}} --seed --post-seed-hook ./scripts/reset-armory/init.sh
 
 # Build Tailwind CSS (watch mode)
 css-watch:

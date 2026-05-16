@@ -1,6 +1,17 @@
-apiVersion: armory.kannika.io/v1alpha1
+apiVersion: kannika.io/v1alpha
 kind: Backup
 metadata:
-  name: demo-backup
-  namespace: armory
-spec: {}
+  name: siege
+  namespace: kannika-data
+spec:
+  source: redpanda
+  sink: siege
+  compression:
+    algorithm: zstd
+  streams:
+    - topic: kings-landing
+    - topic: winterfell
+    - topic: the-wall
+    - topic: iron-islands
+    - topic: dragonstone
+    - topic: the-citadel

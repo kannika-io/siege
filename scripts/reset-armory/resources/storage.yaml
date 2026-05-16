@@ -1,0 +1,8 @@
+apiVersion: kannika.io/v1alpha
+kind: Storage
+metadata:
+  name: siege
+  namespace: kannika-data
+spec:
+  volume:
+    capacity: 10Gi
