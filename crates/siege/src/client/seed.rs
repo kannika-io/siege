@@ -12,7 +12,7 @@ impl<'a, C: SiegeContext> Seed<'a, C> {
     }
 
     pub async fn seed_topics(&self) -> Result<SeedResult, SiegeError> {
-        let result = self.ctx.seeder().seed_topics().await.map_err(|e| SiegeError::Seed(e.to_string()))?;
+        let result = self.ctx.seeder().seed_topics().await?;
         let mut topics = Vec::new();
         for name in &result.created {
             if let Ok(detail) = self.ctx.kafka().get_topic(name).await {

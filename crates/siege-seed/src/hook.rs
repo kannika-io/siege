@@ -1,7 +1,7 @@
 use std::future::Future;
 use std::pin::Pin;
 
-use siege::SiegeError;
+use siege::{SeedError, SiegeError};
 use tokio::fs::File;
 use tokio::io::{AsyncBufReadExt, AsyncWriteExt, BufReader};
 use tokio::process::Command;
@@ -37,7 +37,7 @@ impl Hook for Command {
             .stderr(std::process::Stdio::piped())
             .kill_on_drop(true)
             .spawn()
-            .map_err(|e| SiegeError::Seed(format!("post-seed hook failed to spawn: {e}")))?;
+            .map_err(|e| SiegeError::Seed(SeedError::Failed(format!("post-seed hook failed to spawn: {e}"))))?;
 
         let stdout = child.stdout.take();
         let stderr = child.stderr.take();
@@ -69,7 +69,7 @@ impl Hook for Command {
         let status = child
             .wait()
             .await
-            .map_err(|e| SiegeError::Seed(format!("post-seed hook wait failed: {e}")))?;
+            .map_err(|e| SiegeError::Seed(SeedError::Failed(format!("post-seed hook wait failed: {e}"))))?;
 
         let _ = output_handle.await;
         let _ = stderr_handle.await;
@@ -77,9 +77,9 @@ impl Hook for Command {
         if !status.success() {
             let code = status.code().unwrap_or(-1);
             eprintln!("[post-seed-hook] log: {}", log_path.display());
-            return Err(SiegeError::Seed(format!(
+            return Err(SiegeError::Seed(SeedError::Failed(format!(
                 "post-seed hook exited with code {code}"
-            )));
+            ))));
         }
 
         Ok(())

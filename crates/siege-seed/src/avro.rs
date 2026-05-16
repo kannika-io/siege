@@ -1,7 +1,7 @@
 use apache_avro::types::Value;
 use apache_avro::Schema;
 use siege::schema_registry::SchemaId;
-use siege::SiegeError;
+use siege::{SeedError, SiegeError};
 
 pub struct AvroSerializer {
     schema: Schema,
@@ -22,14 +22,14 @@ impl AvroSerializer {
 
         let resolved = value
             .resolve(&self.schema)
-            .map_err(|e| SiegeError::Seed(format!("avro resolve: {e}")))?;
+            .map_err(|e| SiegeError::Seed(SeedError::Failed(format!("avro resolve: {e}"))))?;
 
         apache_avro::to_avro_datum(&self.schema, resolved)
             .map(|datum| {
                 buf.extend_from_slice(&datum);
                 buf
             })
-            .map_err(|e| SiegeError::Seed(format!("avro encode: {e}")))
+            .map_err(|e| SiegeError::Seed(SeedError::Failed(format!("avro encode: {e}"))))
     }
 }
 
