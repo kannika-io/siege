@@ -1,0 +1,6 @@
+apiVersion: armory.kannika.io/v1alpha1
+kind: Backup
+metadata:
+  name: demo-backup
+  namespace: armory
+spec: {}
