@@ -2,6 +2,7 @@ mod avro;
 mod faker;
 pub mod hook;
 
+pub use hook::Hook;
 pub use siege_seed_avsc::avsc;
 
 use apache_avro::Schema;
@@ -13,6 +14,7 @@ use siege::{KafkaProperties, SeedBackend, SeedResult, SiegeError};
 
 use avro::AvroSerializer;
 use faker::generate_record;
+use hook::DynHook;
 
 pub struct TopicSeed {
     name: String,
@@ -56,6 +58,7 @@ pub struct Seeder {
     schema_registry: Option<Box<dyn SchemaRegistryBackend>>,
     seeds: Vec<TopicSeed>,
     rng_seed: u64,
+    on_complete: Option<tokio::sync::Mutex<Box<dyn DynHook>>>,
 }
 
 impl Seeder {
@@ -65,6 +68,7 @@ impl Seeder {
             schema_registry: None,
             seeds: Vec::new(),
             rng_seed: 42,
+            on_complete: None,
         }
     }
 
@@ -80,6 +84,11 @@ impl Seeder {
 
     pub fn rng_seed(mut self, seed: u64) -> Self {
         self.rng_seed = seed;
+        self
+    }
+
+    pub fn on_complete(mut self, hook: impl Hook) -> Self {
+        self.on_complete = Some(tokio::sync::Mutex::new(Box::new(hook) as Box<dyn DynHook>));
         self
     }
 
@@ -157,6 +166,13 @@ impl SeedBackend for Seeder {
             }
         }
 
+        if let Some(hook) = &self.on_complete {
+            let mut hook = hook.lock().await;
+            if let Err(e) = hook.run_boxed().await {
+                eprintln!("post-seed hook error: {e}");
+            }
+        }
+
         Ok(SeedResult { created, skipped })
     }
 }
@@ -165,6 +181,27 @@ impl SeedBackend for Seeder {
 mod tests {
     use super::*;
     use siege::{MockKafkaBackend, NoopSchemaRegistry};
+    use std::sync::Arc;
+    use std::sync::atomic::{AtomicBool, Ordering};
+
+    struct FakeHook {
+        called: Arc<AtomicBool>,
+    }
+
+    impl Hook for FakeHook {
+        async fn run(&mut self) -> Result<(), SiegeError> {
+            self.called.store(true, Ordering::SeqCst);
+            Ok(())
+        }
+    }
+
+    struct FailingHook;
+
+    impl Hook for FailingHook {
+        async fn run(&mut self) -> Result<(), SiegeError> {
+            Err(SiegeError::Seed("hook exploded".into()))
+        }
+    }
 
     #[tokio::test]
     async fn seed_creates_topics_and_reports_result() {
@@ -236,5 +273,29 @@ mod tests {
         let r1 = seeder1.seed_topics().await.expect("should seed");
         let r2 = seeder2.seed_topics().await.expect("should seed");
         assert_eq!(r1.created, r2.created);
+    }
+
+    #[tokio::test]
+    async fn seed_calls_on_complete_hook_after_seeding() {
+        let called = Arc::new(AtomicBool::new(false));
+
+        let kafka = MockKafkaBackend::new();
+        let seeder = Seeder::new(kafka)
+            .topic(TopicSeed::new("hook-test", 1))
+            .on_complete(FakeHook { called: Arc::clone(&called) });
+
+        seeder.seed_topics().await.expect("should seed");
+        assert!(called.load(Ordering::SeqCst));
+    }
+
+    #[tokio::test]
+    async fn seed_continues_when_on_complete_hook_fails() {
+        let kafka = MockKafkaBackend::new();
+        let seeder = Seeder::new(kafka)
+            .topic(TopicSeed::new("hook-fail-test", 1))
+            .on_complete(FailingHook);
+
+        let result = seeder.seed_topics().await.expect("should still succeed");
+        assert_eq!(result.created, vec!["hook-fail-test"]);
     }
 }

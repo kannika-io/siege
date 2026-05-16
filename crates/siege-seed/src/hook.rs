@@ -1,4 +1,5 @@
 use std::future::Future;
+use std::pin::Pin;
 
 use siege::SiegeError;
 use tokio::fs::File;
@@ -7,6 +8,17 @@ use tokio::process::Command;
 
 pub trait Hook: Send + 'static {
     fn run(&mut self) -> impl Future<Output = Result<(), SiegeError>> + Send;
+}
+
+/// Object-safe version of [`Hook`] for use in trait objects.
+pub(crate) trait DynHook: Send {
+    fn run_boxed(&mut self) -> Pin<Box<dyn Future<Output = Result<(), SiegeError>> + Send + '_>>;
+}
+
+impl<T: Hook> DynHook for T {
+    fn run_boxed(&mut self) -> Pin<Box<dyn Future<Output = Result<(), SiegeError>> + Send + '_>> {
+        Box::pin(self.run())
+    }
 }
 
 impl Hook for Command {
