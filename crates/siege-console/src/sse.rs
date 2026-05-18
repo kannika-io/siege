@@ -45,7 +45,8 @@ pub fn use_sse_subscription() {
                     }
                 }
                 SseEvent::ChaosPoisonPillsSent { .. }
-                | SseEvent::ChaosSchemaBreakSent { .. } => {}
+                | SseEvent::ChaosSchemaBreakSent { .. }
+                | SseEvent::SeedProgress { .. } => {}
             }
         }) as Box<dyn FnMut(_)>);
 

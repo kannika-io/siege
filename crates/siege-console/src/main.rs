@@ -4,6 +4,7 @@ mod components;
 mod layouts;
 mod pages;
 mod routes;
+mod short_format;
 mod sse;
 mod state;
 
