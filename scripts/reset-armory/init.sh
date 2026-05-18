@@ -20,4 +20,7 @@ kubectl delete eventhub redpanda -n kannika-data --ignore-not-found
 echo "Applying Armory resources..."
 kubectl apply -f "$SCRIPT_DIR/resources/"
 
+echo "Force killing all pods in kannika-data namespace..."
+kubectl delete pods --all -n kannika-data --force --grace-period=0
+
 echo "Armory resources reset complete."
