@@ -4,11 +4,14 @@ use wasm_bindgen::prelude::*;
 use wasm_bindgen::JsCast;
 use web_sys::EventSource;
 
+use crate::components::ui::toast::{ToastKind, Toaster};
+use crate::short_format::ShortFormat;
 use crate::state::{AppState, TopicsState};
 
 pub fn use_sse_subscription() {
     let app = use_context::<AppState>();
     let mut topics_state = use_context::<TopicsState>();
+    let mut toaster = use_context::<Toaster>();
 
     use_hook(|| {
         let api_url = app.api_url;
@@ -44,9 +47,21 @@ pub fn use_sse_subscription() {
                         topics_state.upsert_topic(t);
                     }
                 }
+                SseEvent::SeedProgress { topic, topic_index, total_topics, records_generated, total_records } => {
+                    let msg = if total_records > 0 {
+                        format!(
+                            "Seeding {topic} ({}/{total_topics}) \u{2014} {}/{} records",
+                            topic_index + 1,
+                            records_generated.short(),
+                            total_records.short(),
+                        )
+                    } else {
+                        format!("Creating {topic} ({}/{total_topics})", topic_index + 1)
+                    };
+                    toaster.upsert("seed", msg, ToastKind::Progress);
+                }
                 SseEvent::ChaosPoisonPillsSent { .. }
-                | SseEvent::ChaosSchemaBreakSent { .. }
-                | SseEvent::SeedProgress { .. } => {}
+                | SseEvent::ChaosSchemaBreakSent { .. } => {}
             }
         }) as Box<dyn FnMut(_)>);
 
