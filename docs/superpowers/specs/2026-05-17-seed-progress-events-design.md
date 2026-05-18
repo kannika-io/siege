@@ -124,11 +124,15 @@ Existing `success()` and `error()` methods remain unchanged.
 
 The `use_sse_subscription` hook captures a `Toaster` from context. On `SeedProgress`:
 
+Numbers are formatted in short form (e.g. `13k`, `100k`, `1.2M`) via a `ShortFormat` extension trait on numeric types in the console crate (e.g. `records_generated.short()`).
+
 ```rust
 SseEvent::SeedProgress { topic, topic_index, total_topics, records_generated, total_records } => {
     let msg = if total_records > 0 {
-        format!("Seeding {topic} ({}/{total_topics}) — {records_generated}/{total_records} records",
-                topic_index + 1)
+        format!("Seeding {topic} ({}/{total_topics}) — {}/{} records",
+                topic_index + 1,
+                records_generated.short(),
+                total_records.short())
     } else {
         format!("Creating {topic} ({}/{total_topics})", topic_index + 1)
     };

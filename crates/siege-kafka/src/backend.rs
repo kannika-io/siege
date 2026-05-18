@@ -43,7 +43,7 @@ impl KafkaBackend for RdKafkaBackend {
             let mut topics: Vec<TopicMeta> = metadata
                 .topics()
                 .iter()
-                .filter(|t| !t.name().starts_with("__"))
+                .filter(|t| !t.name().starts_with('_'))
                 .map(|t| TopicMeta {
                     name: t.name().to_owned(),
                     partitions: t.partitions().len() as i32,
