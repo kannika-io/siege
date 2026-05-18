@@ -73,13 +73,22 @@ impl EventEmitter for Broadcaster {
             DomainEvent::ChaosSchemaBreakSent(e) => {
                 self.send(SseEvent::ChaosSchemaBreakSent { topic: e.topic.clone(), count: e.count });
             }
+            DomainEvent::SeedProgress(e) => {
+                self.send(SseEvent::SeedProgress {
+                    topic: e.topic.clone(),
+                    topic_index: e.topic_index,
+                    total_topics: e.total_topics,
+                    records_generated: e.records_generated,
+                    total_records: e.total_records,
+                });
+            }
         }
     }
 }
 
 #[cfg(test)]
 mod tests {
-    use siege::event::{TopicCreatedEvent, TopicDeletedEvent};
+    use siege::event::{SeedProgressEvent, TopicCreatedEvent, TopicDeletedEvent};
 
     use super::*;
 
@@ -117,6 +126,34 @@ mod tests {
 
         let received = rx.try_recv().unwrap();
         assert!(matches!(received, SseEvent::TopicCreated { topic } if topic.name == "new-topic"));
+    }
+
+    #[test]
+    fn event_emitter_converts_seed_progress() {
+        let bc = Broadcaster::new(16);
+        let mut rx = bc.subscribe();
+
+        bc.emit(&DomainEvent::SeedProgress(SeedProgressEvent {
+            topic: "winterfell".into(),
+            topic_index: 1,
+            total_topics: 6,
+            records_generated: 5000,
+            total_records: 100_000,
+        }));
+
+        let received = rx.try_recv();
+        assert!(received.is_ok());
+        let event = received.unwrap_or_else(|_| panic!("expected event"));
+        assert!(matches!(
+            event,
+            SseEvent::SeedProgress {
+                topic,
+                topic_index: 1,
+                total_topics: 6,
+                records_generated: 5000,
+                total_records: 100_000,
+            } if topic == "winterfell"
+        ));
     }
 
     #[test]
