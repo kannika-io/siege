@@ -37,6 +37,14 @@ pub struct ChaosSchemaBreakSentEvent {
     pub count: u32,
 }
 
+pub struct SeedProgressEvent {
+    pub topic: String,
+    pub topic_index: u32,
+    pub total_topics: u32,
+    pub records_generated: u32,
+    pub total_records: u32,
+}
+
 pub struct TopicsSeededEvent {
     pub topics: Vec<TopicDetail>,
 }
@@ -50,6 +58,7 @@ pub enum DomainEvent {
     ChaosPartitionsIncreased(ChaosPartitionsIncreasedEvent),
     ChaosPoisonPillsSent(ChaosPoisonPillsSentEvent),
     ChaosSchemaBreakSent(ChaosSchemaBreakSentEvent),
+    SeedProgress(SeedProgressEvent),
     TopicsSeeded(TopicsSeededEvent),
 }
 
