@@ -2,6 +2,8 @@ pub mod topic_detail;
 pub mod topic_list;
 pub mod topic_pills;
 
+use std::collections::HashMap;
+
 use dioxus::prelude::*;
 use siege_api_client::TopicDetailResource;
 
@@ -15,6 +17,7 @@ pub fn TopicsPage() -> Element {
     use_context_provider(|| TopicsState {
         list: Signal::new(Vec::new()),
         selected: Signal::new(None::<TopicDetailResource>),
+        seed_progress: Signal::new(HashMap::new()),
     });
 
     sse::use_sse_subscription();

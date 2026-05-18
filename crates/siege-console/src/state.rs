@@ -1,3 +1,5 @@
+use std::collections::HashMap;
+
 use dioxus::prelude::*;
 use siege_api_client::SiegeClient;
 use siege_api_client::{TopicDetailResource, TopicResource};
@@ -74,10 +76,17 @@ impl AppState {
     }
 }
 
+#[derive(Clone, PartialEq)]
+pub struct SeedProgress {
+    pub records_generated: u32,
+    pub total_records: u32,
+}
+
 #[derive(Clone, Copy)]
 pub struct TopicsState {
     pub list: Signal<Vec<TopicResource>>,
     pub selected: Signal<Option<TopicDetailResource>>,
+    pub seed_progress: Signal<HashMap<String, SeedProgress>>,
 }
 
 impl TopicsState {
@@ -105,6 +114,24 @@ impl TopicsState {
             if let Ok(mut w) = self.selected.try_write() {
                 *w = Some(topic.into());
             }
+        }
+    }
+
+    pub fn set_seed_progress(&mut self, topic: String, records_generated: u32, total_records: u32) {
+        if let Ok(mut w) = self.seed_progress.try_write() {
+            w.insert(topic, SeedProgress { records_generated, total_records });
+        }
+    }
+
+    pub fn remove_seed_progress(&mut self, topic: &str) {
+        if let Ok(mut w) = self.seed_progress.try_write() {
+            w.remove(topic);
+        }
+    }
+
+    pub fn clear_seed_progress(&mut self) {
+        if let Ok(mut w) = self.seed_progress.try_write() {
+            w.clear();
         }
     }
 

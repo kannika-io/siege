@@ -43,11 +43,17 @@ pub fn use_sse_subscription() {
                     topics_state.remove_topic(&name);
                 }
                 SseEvent::TopicsSeeded { topics } => {
+                    topics_state.clear_seed_progress();
                     for t in topics {
                         topics_state.upsert_topic(t);
                     }
                 }
                 SseEvent::SeedProgress { topic, topic_index, total_topics, records_generated, total_records } => {
+                    if total_records > 0 && records_generated >= total_records {
+                        topics_state.remove_seed_progress(&topic);
+                    } else {
+                        topics_state.set_seed_progress(topic.clone(), records_generated, total_records);
+                    }
                     let msg = if total_records > 0 {
                         format!(
                             "Seeding {topic} ({}/{total_topics}) \u{2014} {}/{} records",

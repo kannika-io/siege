@@ -41,10 +41,11 @@ fn TopicRow(topic: TopicResource) -> Element {
     let mut topics_state = use_context::<TopicsState>();
     let name = topic.name.clone();
     let is_selected = topics_state.selected.read().as_ref().is_some_and(|s| s.name == topic.name);
+    let progress = topics_state.seed_progress.read().get(&topic.name).cloned();
 
     rsx! {
         div {
-            class: "flex items-center justify-between px-6 py-3 border-b border-border cursor-pointer hover:bg-surface-hover transition-colors",
+            class: "relative border-b border-border cursor-pointer hover:bg-surface-hover transition-colors",
             onclick: move |_| {
                 let client = app.client();
                 let name = name.clone();
@@ -54,9 +55,26 @@ fn TopicRow(topic: TopicResource) -> Element {
                     }
                 });
             },
-            span { class: if is_selected { "text-sm font-medium text-destructive truncate" } else { "text-sm font-medium truncate" }, "{topic.name}" }
-            div { class: "shrink-0",
-                TopicPills { partitions: topic.partitions, replication_factor: topic.replication_factor, config: topic.config.clone() }
+            if let Some(ref p) = progress {
+                {
+                    let pct = if p.total_records > 0 {
+                        (p.records_generated as f64 / p.total_records as f64) * 100.0
+                    } else {
+                        0.0
+                    };
+                    rsx! {
+                        div {
+                            class: "absolute inset-0 bg-indigo-500/10 transition-all duration-300",
+                            style: "width: {pct:.1}%",
+                        }
+                    }
+                }
+            }
+            div { class: "relative flex items-center justify-between px-6 py-3",
+                span { class: if is_selected { "text-sm font-medium text-destructive truncate" } else { "text-sm font-medium truncate" }, "{topic.name}" }
+                div { class: "shrink-0",
+                    TopicPills { partitions: topic.partitions, replication_factor: topic.replication_factor, config: topic.config.clone() }
+                }
             }
         }
     }

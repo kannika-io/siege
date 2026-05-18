@@ -9,7 +9,7 @@ use std::sync::Arc;
 use std::sync::atomic::{AtomicBool, Ordering};
 
 use apache_avro::Schema;
-use siege::event::{DomainEvent, EventEmitter, SeedProgressEvent};
+use siege::event::{DomainEvent, EventEmitter, SeedProgressEvent, TopicCreatedEvent};
 use fake::rand::SeedableRng;
 use fake::rand::rngs::StdRng;
 use siege::kafka::KafkaBackend;
@@ -238,6 +238,14 @@ impl SeedBackend for Seeder {
             {
                 Ok(()) => {
                     created.push(seed.name.clone());
+                    if let Some(events) = &self.events {
+                        events.emit(&DomainEvent::TopicCreated(TopicCreatedEvent {
+                            name: seed.name.clone(),
+                            partitions: seed.partitions,
+                            replication_factor: seed.replication_factor,
+                            config: seed.config.clone(),
+                        }));
+                    }
 
                     if let (Some(schema_str), Some(count)) = (seed.schema, seed.record_count) {
                         self.seed_data(&seed.name, schema_str, count, &mut rng, topic_index, total_topics)
