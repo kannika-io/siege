@@ -6,7 +6,7 @@ use fake::faker::lorem::en::Sentence;
 use fake::faker::name::en::Name;
 use fake::rand::rngs::StdRng;
 
-use siege::SiegeError;
+use siege::{SeedError, SiegeError};
 
 pub fn generate_record(schema: &Schema, rng: &mut StdRng) -> Result<Value, SiegeError> {
     generate_value(schema, None, rng)
@@ -76,7 +76,7 @@ fn generate_value(
         }
         Schema::Null => Ok(Value::Null),
         Schema::Bytes => Ok(Value::Bytes(vec![rng.random(), rng.random(), rng.random()])),
-        _ => Err(SiegeError::Seed(format!("unsupported schema type: {schema:?}"))),
+        _ => Err(SiegeError::Seed(SeedError::Failed(format!("unsupported schema type: {schema:?}")))),
     }
 }
 

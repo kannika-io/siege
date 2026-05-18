@@ -60,6 +60,7 @@ mod tests {
                 DomainEvent::ChaosPoisonPillsSent(_) => "chaos_poison_pills_sent",
                 DomainEvent::ChaosSchemaBreakSent(_) => "chaos_schema_break_sent",
                 DomainEvent::TopicsSeeded(_) => "topics_seeded",
+                DomainEvent::SeedProgress(_) => "seed_progress",
             };
             self.events.lock().unwrap().push(name.to_owned());
         }

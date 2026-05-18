@@ -11,6 +11,13 @@ pub enum SseEvent {
     TopicUpdated { topic: TopicResource },
     TopicDeleted { name: String },
     TopicsSeeded { topics: Vec<TopicResource> },
+    SeedProgress {
+        topic: String,
+        topic_index: u32,
+        total_topics: u32,
+        records_generated: u32,
+        total_records: u32,
+    },
     ChaosTopicDeleted { topic: String },
     ChaosRetentionLowered { topic: TopicResource },
     ChaosCleanupPolicyFlipped { topic: TopicResource },

@@ -57,7 +57,10 @@ impl From<siege::SiegeError> for HttpError {
             siege::SiegeError::TopicAlreadyExists(s) => Self::conflict(s),
             siege::SiegeError::KafkaError(s) => Self::bad_gateway(s),
             siege::SiegeError::Chaos(s) => Self::bad_gateway(s),
-            siege::SiegeError::Seed(s) => Self::bad_gateway(s),
+            siege::SiegeError::Seed(siege::SeedError::AlreadySeeding) => {
+                Self::conflict("Seed already in progress")
+            }
+            siege::SiegeError::Seed(s) => Self::bad_gateway(s.to_string()),
             siege::SiegeError::SchemaRegistry(s) => Self::bad_gateway(s),
             siege::SiegeError::Internal(s) => Self::internal(s),
         }

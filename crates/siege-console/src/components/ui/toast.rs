@@ -5,11 +5,13 @@ use wasm_bindgen::prelude::*;
 pub enum ToastKind {
     Success,
     Error,
+    Progress,
 }
 
 #[derive(Clone, PartialEq)]
 pub struct Toast {
     pub id: u64,
+    pub name: Option<String>,
     pub message: String,
     pub kind: ToastKind,
 }
@@ -36,10 +38,64 @@ impl Toaster {
         self.push(message.into(), ToastKind::Error);
     }
 
+    pub fn upsert(&mut self, name: impl Into<String>, message: impl Into<String>, kind: ToastKind) {
+        let name = name.into();
+        let message = message.into();
+        let mut items = self.items.write();
+        if let Some(toast) = items.iter_mut().find(|t| t.name.as_deref() == Some(&name)) {
+            toast.message = message;
+            toast.kind = kind;
+        } else {
+            let id = (self.next_id)();
+            self.next_id.set(id + 1);
+            items.push(Toast {
+                id,
+                name: Some(name),
+                message,
+                kind,
+            });
+        }
+    }
+
+    pub fn resolve(&mut self, name: &str, message: impl Into<String>, kind: ToastKind) {
+        let message = message.into();
+        let id = {
+            let mut items = self.items.write();
+            if let Some(toast) = items.iter_mut().find(|t| t.name.as_deref() == Some(name)) {
+                toast.message = message;
+                toast.kind = kind;
+                toast.name = None;
+                toast.id
+            } else {
+                let id = (self.next_id)();
+                self.next_id.set(id + 1);
+                items.push(Toast {
+                    id,
+                    name: None,
+                    message,
+                    kind,
+                });
+                id
+            }
+        };
+
+        let mut items = self.items;
+        let cb = Closure::once(move || {
+            items.write().retain(|t| t.id != id);
+        });
+        if let Some(window) = web_sys::window() {
+            let _ = window.set_timeout_with_callback_and_timeout_and_arguments_0(
+                cb.as_ref().unchecked_ref(),
+                3_000,
+            );
+        }
+        cb.forget();
+    }
+
     fn push(&mut self, message: String, kind: ToastKind) {
         let id = (self.next_id)();
         self.next_id.set(id + 1);
-        self.items.write().push(Toast { id, message, kind });
+        self.items.write().push(Toast { id, name: None, message, kind });
 
         let mut items = self.items;
         let cb = Closure::once(move || {
@@ -72,6 +128,7 @@ pub fn ToastContainer() -> Element {
                     let bg = match toast.kind {
                         ToastKind::Success => "bg-emerald-600 text-white",
                         ToastKind::Error => "bg-destructive text-destructive-foreground",
+                        ToastKind::Progress => "bg-indigo-600 text-white",
                     };
                     rsx! {
                         div {

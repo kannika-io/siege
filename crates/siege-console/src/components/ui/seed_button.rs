@@ -1,7 +1,7 @@
 use dioxus::prelude::*;
 
 use super::icon::{Icon, IconName};
-use super::toast::Toaster;
+use super::toast::{ToastKind, Toaster};
 use crate::state::AppState;
 
 #[component]
@@ -16,9 +16,10 @@ pub fn SeedButton() -> Element {
             onclick: move |_| {
                 let client = state.client();
                 async move {
+                    toaster.upsert("seed", "Starting seed...", ToastKind::Progress);
                     match client.seed().await {
-                        Ok(()) => toaster.success("Topics seeded"),
-                        Err(e) => toaster.error(format!("Seed failed: {e}")),
+                        Ok(()) => toaster.resolve("seed", "Topics seeded", ToastKind::Success),
+                        Err(e) => toaster.resolve("seed", format!("Seed failed: {e}"), ToastKind::Error),
                     }
                 }
             },

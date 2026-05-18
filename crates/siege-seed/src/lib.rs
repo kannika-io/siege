@@ -1,17 +1,24 @@
 mod avro;
 mod faker;
+pub mod hook;
 
+pub use hook::Hook;
 pub use siege_seed_avsc::avsc;
 
+use std::sync::Arc;
+use std::sync::atomic::{AtomicBool, Ordering};
+
 use apache_avro::Schema;
+use siege::event::{DomainEvent, EventEmitter, SeedProgressEvent};
 use fake::rand::SeedableRng;
 use fake::rand::rngs::StdRng;
 use siege::kafka::KafkaBackend;
 use siege::schema_registry::SchemaRegistryBackend;
-use siege::{KafkaProperties, SeedBackend, SeedResult, SiegeError};
+use siege::{KafkaProperties, SeedBackend, SeedError, SeedResult, SiegeError};
 
 use avro::AvroSerializer;
 use faker::generate_record;
+use hook::DynHook;
 
 pub struct TopicSeed {
     name: String,
@@ -50,11 +57,35 @@ impl TopicSeed {
     }
 }
 
+struct SeedGuard<'a> {
+    flag: &'a AtomicBool,
+}
+
+impl<'a> SeedGuard<'a> {
+    fn acquire(flag: &'a AtomicBool) -> Option<Self> {
+        if flag.swap(true, Ordering::SeqCst) {
+            None
+        } else {
+            Some(Self { flag })
+        }
+    }
+}
+
+impl Drop for SeedGuard<'_> {
+    fn drop(&mut self) {
+        self.flag.store(false, Ordering::SeqCst);
+    }
+}
+
 pub struct Seeder {
     kafka: Box<dyn KafkaBackend>,
     schema_registry: Option<Box<dyn SchemaRegistryBackend>>,
     seeds: Vec<TopicSeed>,
     rng_seed: u64,
+    on_complete: Option<tokio::sync::Mutex<Box<dyn DynHook>>>,
+    idempotent: bool,
+    running: AtomicBool,
+    events: Option<Arc<dyn EventEmitter>>,
 }
 
 impl Seeder {
@@ -64,7 +95,16 @@ impl Seeder {
             schema_registry: None,
             seeds: Vec::new(),
             rng_seed: 42,
+            on_complete: None,
+            idempotent: false,
+            running: AtomicBool::new(false),
+            events: None,
         }
+    }
+
+    pub fn idempotent(mut self) -> Self {
+        self.idempotent = true;
+        self
     }
 
     pub fn schema_registry(mut self, sr: impl SchemaRegistryBackend) -> Self {
@@ -82,23 +122,54 @@ impl Seeder {
         self
     }
 
+    pub fn on_complete(mut self, hook: impl Hook) -> Self {
+        self.on_complete = Some(tokio::sync::Mutex::new(Box::new(hook) as Box<dyn DynHook>));
+        self
+    }
+
+    pub fn events(mut self, emitter: Arc<dyn EventEmitter>) -> Self {
+        self.events = Some(emitter);
+        self
+    }
+
+    fn emit_progress(
+        &self,
+        topic: &str,
+        topic_index: u32,
+        total_topics: u32,
+        records_generated: u32,
+        total_records: u32,
+    ) {
+        if let Some(events) = &self.events {
+            events.emit(&DomainEvent::SeedProgress(SeedProgressEvent {
+                topic: topic.to_owned(),
+                topic_index,
+                total_topics,
+                records_generated,
+                total_records,
+            }));
+        }
+    }
+
     async fn seed_data(
         &self,
         topic: &str,
         schema_str: &str,
         count: u32,
         rng: &mut StdRng,
+        topic_index: u32,
+        total_topics: u32,
     ) -> Result<(), SiegeError> {
         let sr = self
             .schema_registry
             .as_ref()
-            .ok_or_else(|| SiegeError::Seed("schema_registry is required to seed data".into()))?;
+            .ok_or_else(|| SiegeError::Seed(SeedError::Failed("schema_registry is required to seed data".into())))?;
 
         let subject = format!("{topic}-value");
         let schema_id = sr.register_schema(&subject, schema_str).await?;
 
         let schema = Schema::parse_str(schema_str)
-            .map_err(|e| SiegeError::Seed(format!("failed to parse schema: {e}")))?;
+            .map_err(|e| SiegeError::Seed(SeedError::Failed(format!("failed to parse schema: {e}"))))?;
 
         let serializer = AvroSerializer::new(schema.clone(), schema_id);
         let producer = self.kafka.producer();
@@ -107,11 +178,16 @@ impl Seeder {
 
         let mut records = Vec::with_capacity(count as usize);
 
+        let mut last_progress = std::time::Instant::now();
         for i in 0..count {
             let record = generate_record(&schema, rng)?;
             let payload = serializer.serialize(record)?;
             let key = uuid::Uuid::new_v5(&namespace, &i.to_be_bytes()).to_string();
             records.push((key, payload));
+            if last_progress.elapsed() >= std::time::Duration::from_millis(500) {
+                self.emit_progress(topic, topic_index, total_topics, i + 1, count);
+                last_progress = std::time::Instant::now();
+            }
         }
 
         let futures: Vec<_> = records
@@ -126,14 +202,30 @@ impl Seeder {
 }
 
 impl SeedBackend for Seeder {
-    type Error = SiegeError;
 
     async fn seed_topics(&self) -> Result<SeedResult, SiegeError> {
+        let _guard = if self.idempotent {
+            match SeedGuard::acquire(&self.running) {
+                Some(g) => Some(g),
+                None => return Err(SiegeError::Seed(SeedError::AlreadySeeding)),
+            }
+        } else {
+            None
+        };
+
         let mut created = Vec::new();
         let mut skipped = Vec::new();
         let mut rng = StdRng::seed_from_u64(self.rng_seed);
+        let start = std::time::Instant::now();
 
-        for seed in &self.seeds {
+        let total_topics = self.seeds.len() as u32;
+
+        for (topic_index, seed) in self.seeds.iter().enumerate() {
+            let topic_index = topic_index as u32;
+            let total_records = seed.record_count.unwrap_or(0);
+
+            self.emit_progress(&seed.name, topic_index, total_topics, 0, total_records);
+
             match self
                 .kafka
                 .create_topic(
@@ -148,11 +240,22 @@ impl SeedBackend for Seeder {
                     created.push(seed.name.clone());
 
                     if let (Some(schema_str), Some(count)) = (seed.schema, seed.record_count) {
-                        self.seed_data(&seed.name, schema_str, count, &mut rng)
+                        self.seed_data(&seed.name, schema_str, count, &mut rng, topic_index, total_topics)
                             .await?;
                     }
+
+                    self.emit_progress(&seed.name, topic_index, total_topics, total_records, total_records);
                 }
                 Err(_) => skipped.push(seed.name.clone()),
+            }
+        }
+
+        eprintln!("seed completed in {:.2?}", start.elapsed());
+
+        if let Some(hook) = &self.on_complete {
+            let mut hook = hook.lock().await;
+            if let Err(e) = hook.run_boxed().await {
+                eprintln!("post-seed hook error: {e}");
             }
         }
 
@@ -164,6 +267,100 @@ impl SeedBackend for Seeder {
 mod tests {
     use super::*;
     use siege::{MockKafkaBackend, NoopSchemaRegistry};
+    use siege::event::{DomainEvent, EventEmitter};
+    use std::sync::Arc;
+    use std::sync::atomic::{AtomicBool, Ordering};
+
+    struct ProgressRecorder {
+        events: std::sync::Mutex<Vec<(String, u32, u32, u32, u32)>>,
+    }
+
+    impl ProgressRecorder {
+        fn new() -> Arc<Self> {
+            Arc::new(Self {
+                events: std::sync::Mutex::new(Vec::new()),
+            })
+        }
+
+        fn events(&self) -> Vec<(String, u32, u32, u32, u32)> {
+            self.events
+                .lock()
+                .map(|g| g.clone())
+                .unwrap_or_default()
+        }
+    }
+
+    impl EventEmitter for ProgressRecorder {
+        fn emit(&self, event: &DomainEvent) {
+            if let DomainEvent::SeedProgress(e) = event {
+                if let Ok(mut events) = self.events.lock() {
+                    events.push((
+                        e.topic.clone(),
+                        e.topic_index,
+                        e.total_topics,
+                        e.records_generated,
+                        e.total_records,
+                    ));
+                }
+            }
+        }
+    }
+
+    #[tokio::test]
+    async fn seed_emits_progress_per_topic() -> Result<(), SiegeError> {
+        let recorder = ProgressRecorder::new();
+        let kafka = MockKafkaBackend::new();
+        let seeder = Seeder::new(kafka)
+            .events(recorder.clone())
+            .topic(TopicSeed::new("topic-a", 3))
+            .topic(TopicSeed::new("topic-b", 1));
+
+        seeder.seed_topics().await?;
+
+        let events = recorder.events();
+        // Should have at least a start event for each topic
+        assert!(events.iter().any(|(t, idx, total, _, _)| t == "topic-a" && *idx == 0 && *total == 2));
+        assert!(events.iter().any(|(t, idx, total, _, _)| t == "topic-b" && *idx == 1 && *total == 2));
+        Ok(())
+    }
+
+    #[tokio::test]
+    async fn seed_emits_record_progress() -> Result<(), SiegeError> {
+        let recorder = ProgressRecorder::new();
+        let kafka = MockKafkaBackend::new();
+        let schema_str = r#"{"type":"record","name":"Test","namespace":"io.siege.schemas","fields":[{"name":"name","type":"string"}]}"#;
+        let seeder = Seeder::new(kafka)
+            .events(recorder.clone())
+            .schema_registry(NoopSchemaRegistry)
+            .topic(TopicSeed::new("data-topic", 1).schema(schema_str).records(10));
+
+        seeder.seed_topics().await?;
+
+        let events = recorder.events();
+        // Should have start (records_generated=0) and completion (records_generated=10)
+        assert!(events.iter().any(|(t, _, _, generated, total)| t == "data-topic" && *generated == 0 && *total == 10));
+        assert!(events.iter().any(|(t, _, _, generated, total)| t == "data-topic" && *generated == 10 && *total == 10));
+        Ok(())
+    }
+
+    struct FakeHook {
+        called: Arc<AtomicBool>,
+    }
+
+    impl Hook for FakeHook {
+        async fn run(&mut self) -> Result<(), SiegeError> {
+            self.called.store(true, Ordering::SeqCst);
+            Ok(())
+        }
+    }
+
+    struct FailingHook;
+
+    impl Hook for FailingHook {
+        async fn run(&mut self) -> Result<(), SiegeError> {
+            Err(SiegeError::Seed(SeedError::Failed("hook exploded".into())))
+        }
+    }
 
     #[tokio::test]
     async fn seed_creates_topics_and_reports_result() {
@@ -235,5 +432,29 @@ mod tests {
         let r1 = seeder1.seed_topics().await.expect("should seed");
         let r2 = seeder2.seed_topics().await.expect("should seed");
         assert_eq!(r1.created, r2.created);
+    }
+
+    #[tokio::test]
+    async fn seed_calls_on_complete_hook_after_seeding() {
+        let called = Arc::new(AtomicBool::new(false));
+
+        let kafka = MockKafkaBackend::new();
+        let seeder = Seeder::new(kafka)
+            .topic(TopicSeed::new("hook-test", 1))
+            .on_complete(FakeHook { called: Arc::clone(&called) });
+
+        seeder.seed_topics().await.expect("should seed");
+        assert!(called.load(Ordering::SeqCst));
+    }
+
+    #[tokio::test]
+    async fn seed_continues_when_on_complete_hook_fails() {
+        let kafka = MockKafkaBackend::new();
+        let seeder = Seeder::new(kafka)
+            .topic(TopicSeed::new("hook-fail-test", 1))
+            .on_complete(FailingHook);
+
+        let result = seeder.seed_topics().await.expect("should still succeed");
+        assert_eq!(result.created, vec!["hook-fail-test"]);
     }
 }

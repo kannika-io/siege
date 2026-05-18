@@ -26,8 +26,6 @@ impl ChaosBackend for NoopChaos {
 pub struct NoopSeeder;
 
 impl SeedBackend for NoopSeeder {
-    type Error = SiegeError;
-
     async fn seed_topics(&self) -> Result<SeedResult, SiegeError> {
         Ok(SeedResult { created: vec![], skipped: vec![] })
     }

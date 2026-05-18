@@ -4,6 +4,8 @@ mod mapping;
 mod routes;
 mod sse;
 
+use std::sync::Arc;
+
 use actix_cors::Cors;
 use actix_web::{web, App, HttpServer};
 use clap::Parser;
@@ -62,7 +64,7 @@ struct Cli {
     #[arg(long)]
     bootstrap_servers: String,
 
-    #[arg(long, default_value = "8080")]
+    #[arg(long, default_value = "51363")]
     port: u16,
 
     #[arg(long, default_value = "false")]
@@ -70,6 +72,9 @@ struct Cli {
 
     #[arg(long)]
     schema_registry_url: Option<String>,
+
+    #[arg(long)]
+    post_seed_hook: Option<String>,
 }
 
 #[tokio::main]
@@ -77,43 +82,53 @@ async fn main() -> std::io::Result<()> {
     let cli = Cli::parse();
 
     let backend = RdKafkaBackend::new(&cli.bootstrap_servers);
-    let broadcaster = Broadcaster::new(256);
+    let broadcaster = Arc::new(Broadcaster::new(256));
     let chaos = ChaosClient::new(backend.clone());
 
     let schema_registry = cli.schema_registry_url.as_deref().map(SchemaRegistryClient::new);
 
     let mut seeder = Seeder::new(backend.clone())
+        .idempotent()
+        .events(broadcaster.clone())
         .topic(
             TopicSeed::new("kings-landing", 6)
                 .schema(avsc!("../../schemas/kings-landing.avsc"))
-                .records(100),
+                .records(100_000),
         )
         .topic(
             TopicSeed::new("winterfell", 3)
                 .schema(avsc!("../../schemas/winterfell.avsc"))
-                .records(100),
+                .records(100_000),
         )
         .topic(
             TopicSeed::new("the-wall", 1)
                 .schema(avsc!("../../schemas/the-wall.avsc"))
-                .records(50),
+                .records(50_000),
         )
         .topic(
             TopicSeed::new("iron-islands", 3)
                 .schema(avsc!("../../schemas/iron-islands.avsc"))
-                .records(100),
+                .records(100_000),
         )
         .topic(
             TopicSeed::new("dragonstone", 3)
                 .schema(avsc!("../../schemas/dragonstone.avsc"))
-                .records(100),
+                .records(100_000),
         )
         .topic(
             TopicSeed::new("the-citadel", 1)
                 .config("cleanup.policy", "compact")
                 .schema(avsc!("../../schemas/the-citadel.avsc"))
-                .records(50),
+                .records(50_000),
         );
+
+    if let Some(ref hook_path) = cli.post_seed_hook {
+        if cli.seed {
+            seeder = seeder.on_complete(tokio::process::Command::new(hook_path));
+        } else {
+            eprintln!("warning: --post-seed-hook has no effect without --seed");
+        }
+    }
 
     if let Some(ref url) = cli.schema_registry_url {
         seeder = seeder.schema_registry(SchemaRegistryClient::new(url));
@@ -140,11 +155,11 @@ async fn main() -> std::io::Result<()> {
         .await;
     });
 
-    let broadcaster_data = web::Data::new(broadcaster.clone());
+    let broadcaster_data = web::Data::from(broadcaster.clone());
 
     let client = web::Data::new(siege::client::Client::new(Siege {
         kafka: backend,
-        events: broadcaster,
+        events: (*broadcaster).clone(),
         chaos,
         seeder,
         schema_registry,
