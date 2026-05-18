@@ -93,33 +93,33 @@ async fn main() -> std::io::Result<()> {
         .topic(
             TopicSeed::new("kings-landing", 6)
                 .schema(avsc!("../../schemas/kings-landing.avsc"))
-                .records(100_000),
+                .records(1_000_000),
         )
         .topic(
             TopicSeed::new("winterfell", 3)
                 .schema(avsc!("../../schemas/winterfell.avsc"))
-                .records(100_000),
+                .records(1_000_000),
         )
         .topic(
             TopicSeed::new("the-wall", 1)
                 .schema(avsc!("../../schemas/the-wall.avsc"))
-                .records(50_000),
+                .records(500_000),
         )
         .topic(
             TopicSeed::new("iron-islands", 3)
                 .schema(avsc!("../../schemas/iron-islands.avsc"))
-                .records(100_000),
+                .records(1_000_000),
         )
         .topic(
             TopicSeed::new("dragonstone", 3)
                 .schema(avsc!("../../schemas/dragonstone.avsc"))
-                .records(100_000),
+                .records(1_000_000),
         )
         .topic(
             TopicSeed::new("the-citadel", 1)
                 .config("cleanup.policy", "compact")
                 .schema(avsc!("../../schemas/the-citadel.avsc"))
-                .records(50_000),
+                .records(500_000),
         );
 
     if let Some(ref hook_path) = cli.post_seed_hook {
