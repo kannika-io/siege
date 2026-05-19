@@ -7,7 +7,7 @@ mod sse;
 use std::sync::Arc;
 
 use actix_cors::Cors;
-use actix_web::{web, App, HttpServer};
+use actix_web::{App, HttpServer, web};
 use clap::Parser;
 use siege::{SeedBackend, SiegeContext};
 use siege_api_spec::ApiDoc;
@@ -85,7 +85,10 @@ async fn main() -> std::io::Result<()> {
     let broadcaster = Arc::new(Broadcaster::new(256));
     let chaos = ChaosClient::new(backend.clone());
 
-    let schema_registry = cli.schema_registry_url.as_deref().map(SchemaRegistryClient::new);
+    let schema_registry = cli
+        .schema_registry_url
+        .as_deref()
+        .map(SchemaRegistryClient::new);
 
     let mut seeder = Seeder::new(backend.clone())
         .idempotent()
@@ -93,7 +96,7 @@ async fn main() -> std::io::Result<()> {
         .topic(
             TopicSeed::new("kings-landing", 6)
                 .schema(avsc!("../../schemas/kings-landing.avsc"))
-                .records(1_000_000),
+                .records(100_000_000),
         )
         .topic(
             TopicSeed::new("winterfell", 3)
