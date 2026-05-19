@@ -96,7 +96,7 @@ async fn main() -> std::io::Result<()> {
         .topic(
             TopicSeed::new("kings-landing", 6)
                 .schema(avsc!("../../schemas/kings-landing.avsc"))
-                .records(100_000_000),
+                .records(1_000_000),
         )
         .topic(
             TopicSeed::new("winterfell", 3)
