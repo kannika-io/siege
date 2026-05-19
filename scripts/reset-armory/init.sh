@@ -3,11 +3,14 @@ set -euo pipefail
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 
-echo "Connecting Kind nodes to Redpanda network..."
-REDPANDA_CONTAINER=$(docker ps --filter "label=com.docker.compose.service=redpanda" --format '{{.Names}}')
-REDPANDA_NETWORK=$(docker inspect "$REDPANDA_CONTAINER" -f '{{range $k,$v := .NetworkSettings.Networks}}{{$k}}{{"\n"}}{{end}}' | grep -v "^$" | head -1)
+echo "Connecting Kind nodes to Kafka network..."
+KAFKA_CONTAINER=$(docker ps --filter "label=com.docker.compose.service=redpanda" --format '{{.Names}}')
+if [ -z "$KAFKA_CONTAINER" ]; then
+    KAFKA_CONTAINER=$(docker ps --filter "label=com.docker.compose.service=kafka" --format '{{.Names}}')
+fi
+KAFKA_NETWORK=$(docker inspect "$KAFKA_CONTAINER" -f '{{range $k,$v := .NetworkSettings.Networks}}{{$k}}{{"\n"}}{{end}}' | grep -v "^$" | head -1)
 for node in $(docker ps --filter "label=io.x-k8s.kind.cluster" --format '{{.Names}}'); do
-    docker network connect "$REDPANDA_NETWORK" "$node" 2>/dev/null || true
+    docker network connect "$KAFKA_NETWORK" "$node" 2>/dev/null || true
 done
 
 echo "Resetting Armory resources..."
