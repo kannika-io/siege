@@ -5,8 +5,11 @@ SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 
 echo "Connecting Kind nodes to Kafka network..."
 KAFKA_CONTAINER=$(docker ps --filter "label=com.docker.compose.service=redpanda" --format '{{.Names}}')
-if [ -z "$KAFKA_CONTAINER" ]; then
+if [ -n "$KAFKA_CONTAINER" ]; then
+    RESOURCE_DIR="redpanda"
+else
     KAFKA_CONTAINER=$(docker ps --filter "label=com.docker.compose.service=kafka" --format '{{.Names}}')
+    RESOURCE_DIR="confluent"
 fi
 KAFKA_NETWORK=$(docker inspect "$KAFKA_CONTAINER" -f '{{range $k,$v := .NetworkSettings.Networks}}{{$k}}{{"\n"}}{{end}}' | grep -v "^$" | head -1)
 for node in $(docker ps --filter "label=io.x-k8s.kind.cluster" --format '{{.Names}}'); do
@@ -14,14 +17,16 @@ for node in $(docker ps --filter "label=io.x-k8s.kind.cluster" --format '{{.Name
 done
 
 echo "Resetting Armory resources..."
-kubectl delete backup siege -n kannika-data --ignore-not-found
+kubectl delete backup redpanda -n kannika-data --ignore-not-found
+kubectl delete backup confluent -n kannika-data --ignore-not-found
 kubectl delete storage siege -n kannika-data --ignore-not-found
 kubectl patch pvc siege -n kannika-data -p '{"metadata":{"finalizers":null}}' 2>/dev/null || true
 kubectl delete pvc siege -n kannika-data --ignore-not-found
 kubectl delete eventhub redpanda -n kannika-data --ignore-not-found
+kubectl delete eventhub confluent -n kannika-data --ignore-not-found
 
 echo "Applying Armory resources..."
-kubectl apply -f "$SCRIPT_DIR/resources/"
+kubectl apply -f "$SCRIPT_DIR/resources/" -R
 
 echo "Force killing all pods in kannika-data namespace..."
 kubectl delete pods --all -n kannika-data --force --grace-period=0

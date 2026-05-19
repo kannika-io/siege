@@ -1,0 +1,9 @@
+apiVersion: kannika.io/v1alpha
+kind: EventHub
+metadata:
+  name: confluent
+  namespace: kannika-data
+spec:
+  kafka:
+    properties:
+      bootstrap.servers: kafka:29092

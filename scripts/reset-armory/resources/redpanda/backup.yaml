@@ -1,7 +1,7 @@
 apiVersion: kannika.io/v1alpha
 kind: Backup
 metadata:
-  name: siege
+  name: redpanda
   namespace: kannika-data
 spec:
   source: redpanda
