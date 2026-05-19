@@ -13,7 +13,8 @@ services:
       - --memory 512M
       - --mode dev-container
       - --set redpanda.log_compaction_interval_ms=3000
-      - --set redpanda.log_cleanup_interval_ms=3000
+      - --set redpanda.log_segment_ms=60000
+      - --set redpanda.log_retention_ms=3000
     ports:
       - "19092:19092"
       - "18081:18081"
