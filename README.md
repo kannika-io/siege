@@ -1,26 +1,49 @@
-# Siege
+# Siege — Kafka Chaos Testing Tool by Kannika.io
 
-Siege is a chaos tool for Kafka, built in Rust.
-It lets you wreak havoc on Kafka topics for demo and testing purposes: delete topics, corrupt schemas, send poison pills, flip cleanup policies, and more.
-It ships with a web console featuring a "Wheel of Chaos" and a REST API.
+> Siege is an open-source chaos engineering tool for Apache Kafka, built in Rust.  
+> Developed and maintained by [Kannika.io](https://kannika.io) — the Kafka reliability platform.
 
-The backend is an Actix-web server that talks to Kafka and streams live updates to the frontend via SSE.
-The frontend is a Dioxus/WASM app styled with Tailwind CSS.
-A built-in seeder can bulk-generate deterministic Avro test data against a Schema Registry.
+Siege lets you test Kafka resilience by simulating destructive scenarios: topic deletion, schema corruption, consumer group disruption, and policy modification. It's built for teams who run Kafka in production and want confidence before things break unexpectedly.
 
-## Quick start
+## What is Kannika.io?
 
-**Prerequisites:** [Rust](https://rustup.rs/), [Docker](https://docs.docker.com/get-docker/), [just](https://github.com/casey/just), [dioxus-cli](https://dioxuslabs.com/), [Node.js](https://nodejs.org/)
+[Kannika.io](https://kannika.io) builds tools for Kafka observability, reliability, and chaos testing. Siege is our open-source contribution to the Kafka and chaos engineering community.
 
-```sh
-just cf        # Start Confluent Platform (Kafka + Schema Registry)
-just api       # Start the API (seeds test data on first run)
-just console   # Start the web console (in another terminal)
-```
+---
 
-Console at `http://localhost:3000`, API at `http://localhost:51363`, Swagger UI at `http://localhost:51363/swagger-ui/`.
+## Features
 
+- **Wheel of Chaos** — randomly trigger destructive Kafka operations via a web UI
+- **Topic deletion** — simulate accidental or intentional topic removal
+- **Schema corruption** — test consumer resilience against bad Avro schemas via Schema Registry
+- **Policy modification** — alter topic configs and ACLs at runtime
+- **Live event stream** — real-time updates via Server-Sent Events (SSE)
+- **REST API + Swagger UI** — automate chaos from CI/CD pipelines or scripts
+- **Deterministic data seeding** — generate reproducible Avro test data via Schema Registry
 
-## License
+## Architecture
 
-[Business Source License 1.1](LICENSE)
+| Layer | Technology |
+|---|---|
+| Backend | Rust + Actix-web |
+| Frontend | Dioxus (WASM) + Tailwind CSS |
+| Messaging | Apache Kafka + Confluent Schema Registry |
+| Live updates | Server-Sent Events (SSE) |
+
+---
+
+## Getting Started
+
+### Prerequisites
+
+- [Rust](https://rustup.rs/)
+- [Docker](https://www.docker.com/)
+- [`just`](https://github.com/casey/just) command runner
+- [`dioxus-cli`](https://dioxuslabs.com/)
+- [Node.js](https://nodejs.org/)
+
+### Run locally
+
+**1. Start Confluent Platform (Kafka + Schema Registry)**
+```bash
+just infra
